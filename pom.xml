@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.spark-project</groupId>
   <artifactId>spark-parent</artifactId>
-  <version>0.8.0-SNAPSHOT</version>
+  <version>0.8.0-candidate-csd-1-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Spark Project Parent POM</name>
   <url>http://spark-project.org/</url>
@@ -15,8 +15,8 @@
     </license>
   </licenses>
   <scm>
-    <connection>scm:git:git@github.com:mesos/spark.git</connection>
-    <url>scm:git:git@github.com:mesos/spark.git</url>
+    <connection>scm:git:git@github.com:clearstorydata/spark.git</connection>
+    <url>scm:git:git@github.com:clearstorydata/spark.git</url>
   </scm>
   <developers>
     <developer>
@@ -156,6 +156,17 @@
       </snapshots>
     </pluginRepository>
   </pluginRepositories>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>${distRepo.snapshots.id}</id>
+      <url>${distRepo.snapshots.url}</url>
+    </snapshotRepository>
+    <repository>
+      <id>${distRepo.releases.id}</id>
+      <url>${distRepo.releases.url}</url>
+    </repository>
+  </distributionManagement>
 
   <dependencyManagement>
     <dependencies>
