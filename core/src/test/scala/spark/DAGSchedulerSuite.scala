@@ -1,9 +1,3 @@
-/*
-* Copyright (c) Clear Story Data, Inc. All Rights Reserved.
-*
-* Please see the COPYRIGHT file in the root of this repository for more
-* details.
-*/
 package spark
 
 import org.scalatest.FunSuite
