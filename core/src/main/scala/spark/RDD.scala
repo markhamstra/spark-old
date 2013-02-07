@@ -1,13 +1,10 @@
 package spark
 
-import java.net.URL
-import java.util.{Date, Random}
-import java.util.{HashMap => JHashMap}
+import java.util.Random
 
 import scala.collection.Map
 import scala.collection.JavaConversions.mapAsScalaMap
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.HashMap
 
 import org.apache.hadoop.io.BytesWritable
 import org.apache.hadoop.io.NullWritable
@@ -34,6 +31,8 @@ import spark.rdd.ZippedRDD
 import spark.storage.StorageLevel
 
 import SparkContext._
+import spark.RDD.PartitionMapper
+import util.CleanupIterator
 
 /**
  * A Resilient Distributed Dataset (RDD), the basic abstraction in Spark. Represents an immutable,
@@ -338,6 +337,14 @@ abstract class RDD[T: ClassManifest](
     f: (Int, Iterator[T]) => Iterator[U],
     preservesPartitioning: Boolean = false): RDD[U] =
     new MapPartitionsWithSplitRDD(this, sc.clean(f), preservesPartitioning)
+
+  def mapWithSetupAndCleanup[U: ClassManifest](m: PartitionMapper[T,U]) : RDD[U] =
+    mapPartitions{
+      itr =>
+        m.setup
+        val subItr = itr.map{m.map}
+        CleanupIterator[U,Iterator[U]](subItr, m.cleanup _)
+    }
 
   /**
    * Zips this RDD with another one, returning key-value pairs with the first element in each RDD,
@@ -679,4 +686,12 @@ abstract class RDD[T: ClassManifest](
     id,
     origin)
 
+}
+
+object RDD {
+  trait PartitionMapper[T,U] {
+    def setup
+    def map(t: T) : U
+    def cleanup
+  }
 }
