@@ -1,11 +1,11 @@
 package spark
 
 import scala.collection.mutable.HashMap
+import scala.collection.Set
 import org.scalatest.FunSuite
 import spark.SparkContext._
 import spark.rdd.{CoalescedRDD, PartitionPruningRDD}
 import spark.RDD.PartitionMapper
-import collection._
 
 class RDDSuite extends FunSuite with LocalSparkContext {
 
@@ -182,13 +182,13 @@ class RDDSuite extends FunSuite with LocalSparkContext {
     val acc = sc.accumulableCollection(new HashMap[Int,Set[Int]]())
     val mapped = data.mapWithSetupAndCleanup(new PartitionMapper[Int,Int](){
       var partition = -1
-      val values = mutable.Set[Int]()
+      var values = Set[Int]()
       def setup(partition:Int) {this.partition = partition}
       def map(i:Int) = {values += i; i * 2}
       def cleanup = {
         //the purpose of this strange code is just to make sure this method is called
         // after the data has been iterated through completely.
-        acc.localValue += (partition -> Set[Int](values.toSeq: _*))
+        acc.localValue += (partition -> values)
       }
     }).collect
 
@@ -203,16 +203,16 @@ class RDDSuite extends FunSuite with LocalSparkContext {
     val acc2 = sc.accumulableCollection(new HashMap[Int,Set[Int]]())
     val m2 = data.mapPartitionsWithSplit{
       case (partition, itr) =>
-        val values = mutable.Set[Int]()
+        var values = Set[Int]()
         val mItr = itr.map{i => values += i; i * 2}
         //you haven't actually put anything into values yet, b/c itr.map defines another
         // iterator, which is lazily computed.  so the Set is empty
-        acc2.localValue += (partition -> Set[Int](values.toSeq: _*))
+        acc2.localValue += (partition -> values)
         mItr
     }.collect
 
     assert(m2.toSet === (1 to 100).map{_ * 2}.toSet)
-    assert(acc2.value.keySet == (0 to 3).toSet)
+    assert(acc2.value.keySet === (0 to 3).toSet)
     //this condition will fail
 //    acc2.value.foreach { case(partition, values) =>
 //      assert(values.size === 25)

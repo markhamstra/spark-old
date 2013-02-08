@@ -30,9 +30,9 @@ import spark.rdd.UnionRDD
 import spark.rdd.ZippedRDD
 import spark.storage.StorageLevel
 
-import SparkContext._
+import spark.SparkContext._
 import spark.RDD.PartitionMapper
-import util.CleanupIterator
+import spark.util.CleanupIterator
 
 /**
  * A Resilient Distributed Dataset (RDD), the basic abstraction in Spark. Represents an immutable,
