@@ -338,10 +338,17 @@ abstract class RDD[T: ClassManifest](
     preservesPartitioning: Boolean = false): RDD[U] =
     new MapPartitionsWithSplitRDD(this, sc.clean(f), preservesPartitioning)
 
+  /**
+   * Return a new RDD by applying a function to every element in this RDD, with extra setup & cleanup
+   * at the beginning & end of processing every partition.
+   *
+   * This might be useful if you need to setup some resources per task & cleanup them up at the end, eg.
+   * a db connection
+   */
   def mapWithSetupAndCleanup[U: ClassManifest](m: PartitionMapper[T,U]) : RDD[U] =
-    mapPartitions{
-      itr =>
-        m.setup
+    mapPartitionsWithSplit{
+      case(partition, itr) =>
+        m.setup(partition)
         val subItr = itr.map{m.map}
         CleanupIterator[U,Iterator[U]](subItr, m.cleanup _)
     }
@@ -689,9 +696,25 @@ abstract class RDD[T: ClassManifest](
 }
 
 object RDD {
-  trait PartitionMapper[T,U] {
-    def setup
+
+  /**
+   * Defines a map function over elements of an RDD, but with extra setup and cleanup
+   * that happens
+   */
+  trait PartitionMapper[T,U] extends Serializable {
+    /**
+     * called at the start of processing of each partition
+     */
+    def setup(partiton:Int)
+
+    /**
+     * transform one element of the partition
+     */
     def map(t: T) : U
+
+    /**
+     * called at the end of each partition
+     */
     def cleanup
   }
 }
