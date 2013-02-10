@@ -345,13 +345,10 @@ abstract class RDD[T: ClassManifest](
    * This might be useful if you need to setup some resources per task & cleanup them up at the end, eg.
    * a db connection
    */
-  def mapWithSetupAndCleanup[U: ClassManifest](m: PartitionMapper[T,U]) : RDD[U] =
-    mapPartitionsWithSplit{
-      case(partition, itr) =>
-        m.setup(partition)
-        val subItr = itr.map{m.map}
-        CleanupIterator[U,Iterator[U]](subItr, m.cleanup _)
-    }
+  def mapWithSetupAndCleanup[U: ClassManifest](
+    m: PartitionMapper[T,U],
+    preservesPartitioning: Boolean = false): RDD[U] =
+    new MapPartitionsWithSetupAndCleanup(this, m, preservesPartitioning)
 
   /**
    * Zips this RDD with another one, returning key-value pairs with the first element in each RDD,
@@ -713,7 +710,7 @@ object RDD {
     def map(t: T) : U
 
     /**
-     * called at the end of each partition
+     * called at the end of each partition.  This will get called even if the map failed (eg., an exception was thrown)
      */
     def cleanup
   }
