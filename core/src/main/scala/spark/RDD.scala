@@ -23,6 +23,7 @@ import spark.rdd.FlatMappedRDD
 import spark.rdd.GlommedRDD
 import spark.rdd.MappedRDD
 import spark.rdd.MapPartitionsRDD
+import spark.rdd.MapPartitionsWithSetupAndCleanup
 import spark.rdd.MapPartitionsWithSplitRDD
 import spark.rdd.PipedRDD
 import spark.rdd.SampledRDD
