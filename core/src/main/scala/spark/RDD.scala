@@ -33,7 +33,6 @@ import spark.storage.StorageLevel
 
 import spark.SparkContext._
 import spark.RDD.PartitionMapper
-import spark.util.CleanupIterator
 
 /**
  * A Resilient Distributed Dataset (RDD), the basic abstraction in Spark. Represents an immutable,
