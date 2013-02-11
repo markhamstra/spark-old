@@ -11,6 +11,7 @@ import spark.partial.{PartialResult, BoundedDouble}
 import spark.storage.StorageLevel
 import com.google.common.base.Optional
 import spark.RDD.PartitionMapper
+import spark.api.java.ManifestHelper.fakeManifest
 
 
 trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends PairFlatMapWorkaround[T] {
@@ -117,13 +118,39 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends PairFlatMapWorkaround
     JavaPairRDD.fromRDD(rdd.mapPartitions(fn))(f.keyType(), f.valueType())
   }
 
-  def mapPartitionsWithSetupAndCleanup[U](m: JavaPartitionMapper[T,U]): JavaRDD[U] = {
-    val scalaMapper = new PartitionMapper[T,U] {
+  /**
+   * Return a new RDD by applying a function to each element of the RDD, with an additional
+   * setup & cleanup that happens before & after computing each partition
+   */
+  def mapWithSetupAndCleanup[U](m: PartitionMapper[T,U]): JavaRDD[U] = {
+    JavaRDD.fromRDD(rdd.mapWithSetupAndCleanup(m)(fakeManifest[U]))(fakeManifest[U])
+  }
+
+  /**
+   * Return a new RDD by applying a function to each element of the RDD, with an additional
+   * setup & cleanup that happens before & after computing each partition
+   */
+  def mapWithSetupAndCleanup[K,V](m: JavaPairPartitionMapper[T,K,V]): JavaPairRDD[K,V] = {
+    val scalaMapper = new PartitionMapper[T,(K,V)] {
       def setup(partition:Int) = m.setup(partition)
       def map(t:T) = m.map(t)
-      def cleanup() = m.cleanup()
+      def cleanup = m.cleanup()
     }
-    JavaRDD.fromRDD(rdd.mapWithSetupAndCleanup(scalaMapper)(m.returnType()))(m.returnType())
+    JavaPairRDD.fromRDD(rdd.mapWithSetupAndCleanup(scalaMapper)(fakeManifest[(K,V)]))(
+      fakeManifest[K], fakeManifest[V])
+  }
+
+  /**
+   * Return a new RDD by applying a function to each element of the RDD, with an additional
+   * setup & cleanup that happens before & after computing each partition
+   */
+  def mapWithSetupAndCleanup(m: JavaDoublePartitionMapper[T]): JavaDoubleRDD = {
+    val scalaMapper = new PartitionMapper[T,Double] {
+      def setup(partition:Int) = m.setup(partition)
+      def map(t:T) = m.map(t)
+      def cleanup = m.cleanup()
+    }
+    JavaDoubleRDD.fromRDD(rdd.mapWithSetupAndCleanup(scalaMapper)(manifest[Double]))
   }
 
   /**
