@@ -10,6 +10,7 @@ import spark.api.java.function.{Function2 => JFunction2, Function => JFunction, 
 import spark.partial.{PartialResult, BoundedDouble}
 import spark.storage.StorageLevel
 import com.google.common.base.Optional
+import spark.RDD.PartitionMapper
 
 
 trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends PairFlatMapWorkaround[T] {
@@ -114,6 +115,15 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends PairFlatMapWorkaround
   JavaPairRDD[K, V] = {
     def fn = (x: Iterator[T]) => asScalaIterator(f.apply(asJavaIterator(x)).iterator())
     JavaPairRDD.fromRDD(rdd.mapPartitions(fn))(f.keyType(), f.valueType())
+  }
+
+  def mapPartitionsWithSetupAndCleanup[U](m: JavaPartitionMapper[T,U]): JavaRDD[U] = {
+    val scalaMapper = new PartitionMapper[T,U] {
+      def setup(partition:Int) = m.setup(partition)
+      def map(t:T) = m.map(t)
+      def cleanup() = m.cleanup()
+    }
+    JavaRDD.fromRDD(rdd.mapWithSetupAndCleanup(scalaMapper)(m.returnType()))(m.returnType())
   }
 
   /**
