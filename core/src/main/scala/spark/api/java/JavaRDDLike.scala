@@ -131,12 +131,7 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends PairFlatMapWorkaround
    * setup & cleanup that happens before & after computing each partition
    */
   def mapWithSetupAndCleanup[K,V](m: JavaPairPartitionMapper[T,K,V]): JavaPairRDD[K,V] = {
-    val scalaMapper = new PartitionMapper[T,(K,V)] {
-      def setup(partition:Int) = m.setup(partition)
-      def map(t:T) = m.map(t)
-      def cleanup = m.cleanup()
-    }
-    JavaPairRDD.fromRDD(rdd.mapWithSetupAndCleanup(scalaMapper)(fakeManifest[(K,V)]))(
+    JavaPairRDD.fromRDD(rdd.mapWithSetupAndCleanup(m)(fakeManifest[(K,V)]))(
       fakeManifest[K], fakeManifest[V])
   }
 
