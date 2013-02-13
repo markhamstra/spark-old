@@ -707,6 +707,7 @@ object RDD {
     /**
      * transform one element of the partition
      */
+    @throws(classOf[Exception]) //for the java api
     def map(t: T) : U
 
     /**
