@@ -345,6 +345,15 @@ abstract class RDD[T: ClassManifest](
     preservesPartitioning: Boolean = false): RDD[U] =
     new MapPartitionsWithSplitRDD(this, sc.clean(f), preservesPartitioning)
 
+  def mapWithRandom[U: ClassManifest](f: (Double, T) => U, seed: Int,
+                                      preservesPartitioning: Boolean = false): RDD[U] = {
+    def iterF(split: Int, iter: Iterator[T]): Iterator[U] = {
+      val prng = new java.util.Random(split + seed)
+      iter.map(f(prng.nextDouble(), _))
+    }
+    new MapPartitionsWithSplitRDD(this, sc.clean(iterF _), preservesPartitioning)
+  }
+
   /**
    * Zips this RDD with another one, returning key-value pairs with the first element in each RDD,
    * second element in each RDD, etc. Assumes that the two RDDs have the *same number of
