@@ -347,7 +347,7 @@ abstract class RDD[T: ClassManifest](
 
   /**
    * Maps f over this RDD where f takes an additional parameter of type A.  This
-   * additional parameter is produced by a factory method Unit => A which is called
+   * additional parameter is produced by a factory method T => A which is called
    * on each invocation of f.  This factory method is produced by the factoryBuilder,
    * an instance of which is constructed in each partition from the split id and a
    * seed value of type B.
