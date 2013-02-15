@@ -345,15 +345,24 @@ abstract class RDD[T: ClassManifest](
     preservesPartitioning: Boolean = false): RDD[U] =
     new MapPartitionsWithSplitRDD(this, sc.clean(f), preservesPartitioning)
 
-  def mapWithRandom[U: ClassManifest](f: (Double, T) => U, seed: Int,
-                                      preservesPartitioning: Boolean = false): RDD[U] = {
-    def iterF(split: Int, iter: Iterator[T]): Iterator[U] = {
-      val prng = new java.util.Random(split + seed)
-      iter.map(f(prng.nextDouble(), _))
-    }
+  /**
+   * Maps f over this RDD where f takes an additional parameter of type A.  This
+   * additional parameter is produced by a factory method Unit => A which is called
+   * on each invocation of f.  This factory method is produced by the factoryBuilder,
+   * an instance of which is constructed in each partition from the split id and a
+   * seed value of type B.
+   */
+  def mapWith[A: ClassManifest, B: ClassManifest, U: ClassManifest]
+    (f:(A, T) => U,
+     factoryBuilder: (Int, B) => (T => A),
+     factorySeed: B,
+     preservesPartitioning: Boolean = false): RDD[U] = {
+      def iterF(split: Int, iter: Iterator[T]): Iterator[U] = {
+        val factory = factoryBuilder(split, factorySeed)
+        iter.map(t => f(factory(t), t))
+      }
     new MapPartitionsWithSplitRDD(this, sc.clean(iterF _), preservesPartitioning)
   }
-
   /**
    * Zips this RDD with another one, returning key-value pairs with the first element in each RDD,
    * second element in each RDD, etc. Assumes that the two RDDs have the *same number of
