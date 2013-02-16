@@ -352,16 +352,16 @@ abstract class RDD[T: ClassManifest](
    * an instance of which is constructed in each partition from the split id and a
    * seed value of type B.
    */
-  def mapWith[A: ClassManifest, B: ClassManifest, U: ClassManifest]
-    (f:(A, T) => U,
-     factoryBuilder: (Int, B) => (T => A),
-     factorySeed: B,
-     preservesPartitioning: Boolean = false): RDD[U] = {
+  def mapWith[A: ClassManifest, B: ClassManifest, U: ClassManifest](
+    f:(A, T) => U,
+    factoryBuilder: (Int, B) => (T => A),
+    factorySeed: B,
+    preservesPartitioning: Boolean = false): RDD[U] = {
       def iterF(split: Int, iter: Iterator[T]): Iterator[U] = {
         val factory = factoryBuilder(split, factorySeed)
         iter.map(t => f(factory(t), t))
       }
-    new MapPartitionsWithSplitRDD(this, sc.clean(iterF _), preservesPartitioning)
+      new MapPartitionsWithSplitRDD(this, sc.clean(iterF _), preservesPartitioning)
   }
 
   /**
