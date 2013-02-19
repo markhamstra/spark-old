@@ -371,7 +371,7 @@ abstract class RDD[T: ClassManifest](
         val factory = factoryBuilder(split, factorySeed)
         iter.map(t => f(factory(t), t))
       }
-      new MapPartitionsWithSplitRDD(this, sc.clean(iterF _), preservesPartitioning)
+      new MapPartitionsWithIndexRDD(this, sc.clean(iterF _), preservesPartitioning)
   }
 
   /**
