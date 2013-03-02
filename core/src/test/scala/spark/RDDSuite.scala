@@ -182,11 +182,13 @@ class RDDSuite extends FunSuite with LocalSparkContext {
   test("mapWith") {
     sc = new SparkContext("local", "test")
     val ones = sc.makeRDD(Array(1, 1, 1, 1, 1, 1), 2)
-    def f(random: Double, t: Int): Double = random * t
-    def factoryBuilder(split: Int, seed: Int): (() => Double) = {
-      val prng = new java.util.Random(split + seed)
-      prng.nextDouble}
-//    val randoms = ones.mapWith(f, factoryBuilder, 42).collect()
+    val randoms = ones.mapWith(
+      (random: Double, t: Int) => random * t,
+      (index: Int, seed: Int) => {
+	val prng = new java.util.Random(index + seed)
+	(_ => prng.nextDouble)},
+      42).
+      collect()
     val prn42_3 = {
       val prng42 = new java.util.Random(42)
       prng42.nextDouble(); prng42.nextDouble(); prng42.nextDouble()
@@ -195,7 +197,7 @@ class RDDSuite extends FunSuite with LocalSparkContext {
       val prng43 = new java.util.Random(43)
       prng43.nextDouble(); prng43.nextDouble(); prng43.nextDouble()
     }
-//    assert(randoms(2) === prn42_3)
-//    assert(randoms(5) === prn43_3)
+    assert(randoms(2) === prn42_3)
+    assert(randoms(5) === prn43_3)
   }
 }
