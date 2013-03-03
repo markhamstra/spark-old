@@ -200,4 +200,26 @@ class RDDSuite extends FunSuite with LocalSparkContext {
     assert(randoms(2) === prn42_3)
     assert(randoms(5) === prn43_3)
   }
+
+  test("filterWith") {
+    import java.util.Random
+    sc = new SparkContext("local", "test")
+    val ints = sc.makeRDD(Array(1, 2, 3, 4, 5, 6), 2)
+    val sample = ints.filterWith(
+      (random: Int, t: Int) => random == 0,
+      (index: Int, seed: Int) => {
+	val prng = new Random(index + seed)
+	(_ => prng.nextInt(3))},
+      42).
+      collect()
+    val checkSample = {
+      val prng42 = new Random(42)
+      val prng43 = new Random(43)
+      Array(1, 2, 3, 4, 5, 6).filter{i =>
+	if (i < 4) 0 == prng42.nextInt(3)
+	else 0 == prng43.nextInt(3)}
+    }
+    assert(sample.size === checkSample.size)
+    for (i <- 0 until sample.size) assert(sample(i) === checkSample(i))
+  }
 }

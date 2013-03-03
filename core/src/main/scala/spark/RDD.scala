@@ -368,17 +368,36 @@ abstract class RDD[T: ClassManifest](
    * Maps f over this RDD where f takes an additional parameter of type A.  This
    * additional parameter is produced by a factory method T => A which is called
    * on each invocation of f.  This factory method is produced by the factoryBuilder,
-   * an instance of which is constructed in each partition from the split id and a
-   * seed value of type B.
+   * an instance of which is constructed in each partition from the partition index
+   * and a seed value of type B.
    */
   def mapWith[A: ClassManifest, B: ClassManifest, U: ClassManifest](
     f:(A, T) => U,
     factoryBuilder: (Int, B) => (T => A),
     factorySeed: B,
     preservesPartitioning: Boolean = false): RDD[U] = {
-      def iterF(split: Int, iter: Iterator[T]): Iterator[U] = {
-        val factory = factoryBuilder(split, factorySeed)
+      def iterF(index: Int, iter: Iterator[T]): Iterator[U] = {
+        val factory = factoryBuilder(index, factorySeed)
         iter.map(t => f(factory(t), t))
+      }
+      new MapPartitionsWithIndexRDD(this, sc.clean(iterF _), preservesPartitioning)
+  }
+
+ /**
+   * Filters this RDD with p, where p takes an additional parameter of type A.  This
+   * additional parameter is produced by a factory method T => A which is called
+   * on each invocation of p.  This factory method is produced by the factoryBuilder,
+   * an instance of which is constructed in each partition from the partition index
+   * and a seed value of type B.
+   */
+  def filterWith[A: ClassManifest, B: ClassManifest](
+    p:(A, T) => Boolean,
+    factoryBuilder: (Int, B) => (T => A),
+    factorySeed: B,
+    preservesPartitioning: Boolean = false): RDD[T] = {
+      def iterF(index: Int, iter: Iterator[T]): Iterator[T] = {
+        val factory = factoryBuilder(index, factorySeed)
+        iter.filter(t => p(factory(t), t))
       }
       new MapPartitionsWithIndexRDD(this, sc.clean(iterF _), preservesPartitioning)
   }
@@ -423,7 +442,7 @@ abstract class RDD[T: ClassManifest](
 
   /**
    * Return an RDD with the elements from `this` that are not in `other`.
-   * 
+   *
    * Uses `this` partitioner/partition size, because even if `other` is huge, the resulting
    * RDD will be <= us.
    */
