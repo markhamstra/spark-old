@@ -201,6 +201,28 @@ class RDDSuite extends FunSuite with LocalSparkContext {
     assert(randoms(5) === prn43_3)
   }
 
+  test("flatMapWith") {
+    sc = new SparkContext("local", "test")
+    val ones = sc.makeRDD(Array(1, 1, 1, 1, 1, 1), 2)
+    val randoms = ones.flatMapWith(
+      (random: Double, t: Int) => Seq(random * t, random * t * 10),
+      (index: Int, seed: Int) => {
+        val prng = new java.util.Random(index + seed)
+        (_ => prng.nextDouble)},
+      42).
+      collect()
+    val prn42_3 = {
+      val prng42 = new java.util.Random(42)
+      prng42.nextDouble(); prng42.nextDouble(); prng42.nextDouble()
+    }
+    val prn43_3 = {
+      val prng43 = new java.util.Random(43)
+      prng43.nextDouble(); prng43.nextDouble(); prng43.nextDouble()
+    }
+    assert(randoms(5) === prn42_3 * 10)
+    assert(randoms(11) === prn43_3 * 10)
+  }
+
   test("filterWith") {
     import java.util.Random
     sc = new SparkContext("local", "test")
