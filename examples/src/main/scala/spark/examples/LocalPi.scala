@@ -1,8 +1,6 @@
 package spark.examples
 
 import scala.math.random
-import spark._
-import SparkContext._
 
 object LocalPi {
   def main(args: Array[String]) {

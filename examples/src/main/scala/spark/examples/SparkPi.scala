@@ -2,7 +2,6 @@ package spark.examples
 
 import scala.math.random
 import spark._
-import SparkContext._
 
 object SparkPi {
   def main(args: Array[String]) {

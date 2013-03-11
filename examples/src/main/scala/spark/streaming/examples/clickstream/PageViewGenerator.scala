@@ -1,7 +1,7 @@
 package spark.streaming.examples.clickstream
 
-import java.net.{InetAddress,ServerSocket,Socket,SocketException}
-import java.io.{InputStreamReader, BufferedReader, PrintWriter}
+import java.net.ServerSocket
+import java.io.PrintWriter
 import util.Random
 
 /** Represents a page view on a website with associated dimension data.*/

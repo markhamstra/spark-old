@@ -7,8 +7,8 @@ import spark.api.java.function.Function2;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.StringTokenizer;
 import java.util.Random;
+import java.util.StringTokenizer;
 
 /**
  * Logistic regression based classification.

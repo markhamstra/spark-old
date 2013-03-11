@@ -4,8 +4,6 @@ import java.util.Random
 import spark.SparkContext
 import spark.util.Vector
 import spark.SparkContext._
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.HashSet
 
 /**
  * K-means clustering.

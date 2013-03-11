@@ -1,8 +1,9 @@
 package spark.streaming.examples;
 
 import spark.api.java.function.Function;
-import spark.streaming.*;
-import spark.streaming.api.java.*;
+import spark.streaming.Duration;
+import spark.streaming.api.java.JavaDStream;
+import spark.streaming.api.java.JavaStreamingContext;
 import spark.streaming.dstream.SparkFlumeEvent;
 
 /**

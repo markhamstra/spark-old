@@ -1,13 +1,9 @@
 package spark.streaming.examples
 
 import java.util.Properties
-import kafka.message.Message
-import kafka.producer.SyncProducerConfig
 import kafka.producer._
-import spark.SparkContext
 import spark.streaming._
 import spark.streaming.StreamingContext._
-import spark.storage.StorageLevel
 import spark.streaming.util.RawTextHelper._
 
 /**
