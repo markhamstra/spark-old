@@ -1,10 +1,8 @@
 package spark
 
-import java.io.NotSerializableException
 
 import org.scalatest.FunSuite
 import spark.LocalSparkContext._
-import SparkContext._
 
 class ClosureCleanerSuite extends FunSuite {
   test("closures inside an object") {

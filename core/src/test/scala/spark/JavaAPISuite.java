@@ -1,12 +1,5 @@
 package spark;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.*;
-
-import scala.Tuple2;
-
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import org.apache.hadoop.io.IntWritable;
@@ -18,7 +11,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
+import scala.Tuple2;
 import spark.api.java.JavaDoubleRDD;
 import spark.api.java.JavaPairRDD;
 import spark.api.java.JavaRDD;
@@ -28,6 +21,11 @@ import spark.partial.BoundedDouble;
 import spark.partial.PartialResult;
 import spark.storage.StorageLevel;
 import spark.util.StatCounter;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.*;
 
 
 // The test suite itself is Serializable so that anonymous Function implementations can be

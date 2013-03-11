@@ -7,15 +7,12 @@ import org.scalatest.BeforeAndAfter
 
 import spark.LocalSparkContext
 
-import spark.storage.BlockManager
 import spark.storage.BlockManagerId
 import spark.storage.BlockManagerMaster
 import spark.{Dependency, ShuffleDependency, OneToOneDependency}
-import spark.FetchFailedException
 import spark.MapOutputTracker
 import spark.RDD
 import spark.SparkContext
-import spark.SparkException
 import spark.Partition
 import spark.TaskContext
 import spark.TaskEndReason

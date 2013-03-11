@@ -2,8 +2,7 @@ package spark
 
 import scala.collection.mutable.HashMap
 import org.scalatest.FunSuite
-import spark.SparkContext._
-import spark.rdd.{CoalescedRDD, PartitionPruningRDD}
+import spark.rdd.PartitionPruningRDD
 
 class RDDSuite extends FunSuite with LocalSparkContext {
 

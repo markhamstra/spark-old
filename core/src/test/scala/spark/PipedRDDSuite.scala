@@ -1,7 +1,6 @@
 package spark
 
 import org.scalatest.FunSuite
-import SparkContext._
 
 class PipedRDDSuite extends FunSuite with LocalSparkContext {
   

@@ -2,7 +2,6 @@ package spark
 
 import org.scalatest.FunSuite
 
-import scala.collection.mutable.ArrayBuffer
 
 import SparkContext._
 

@@ -3,9 +3,6 @@ package spark
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
 import collection.mutable
-import java.util.Random
-import scala.math.exp
-import scala.math.signum
 import spark.SparkContext._
 
 class AccumulatorSuite extends FunSuite with ShouldMatchers with LocalSparkContext {
@@ -66,7 +63,6 @@ class AccumulatorSuite extends FunSuite with ShouldMatchers with LocalSparkConte
   }
 
   test ("value not readable in tasks") {
-    import SetAccum._
     val maxI = 1000
     for (nThreads <- List(1, 10)) { //test single & multi-threaded
       sc = new SparkContext("local[" + nThreads + "]", "test")
@@ -108,7 +104,6 @@ class AccumulatorSuite extends FunSuite with ShouldMatchers with LocalSparkConte
   }
 
   test ("localValue readable in tasks") {
-    import SetAccum._
     val maxI = 1000
     for (nThreads <- List(1, 10)) { //test single & multi-threaded
       sc = new SparkContext("local[" + nThreads + "]", "test")

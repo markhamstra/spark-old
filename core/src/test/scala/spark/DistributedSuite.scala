@@ -4,14 +4,7 @@ import network.ConnectionManagerId
 import org.scalatest.FunSuite
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.prop.Checkers
-import org.scalacheck.Arbitrary._
-import org.scalacheck.Gen
-import org.scalacheck.Prop._
 
-import com.google.common.io.Files
-
-import scala.collection.mutable.ArrayBuffer
 
 import SparkContext._
 import storage.{GetBlock, BlockManagerWorker, StorageLevel}

@@ -1,9 +1,7 @@
 package spark
 
 import org.scalatest.FunSuite
-import org.scalatest.prop.Checkers
 
-import scala.collection.mutable.ArrayBuffer
 
 import SparkContext._
 

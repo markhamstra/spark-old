@@ -1,6 +1,6 @@
 package spark
 
-import java.io.{FileWriter, PrintWriter, File}
+import java.io.{FileWriter, File}
 
 import scala.io.Source
 

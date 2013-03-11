@@ -1,12 +1,10 @@
 package spark
 
 import scala.collection.mutable
-import scala.collection.immutable
 
 import org.scalatest.FunSuite
 import com.esotericsoftware.kryo._
 
-import SparkContext._
 
 class KryoSerializerSuite extends FunSuite {
   test("basic types") {
