@@ -1,7 +1,7 @@
 package spark.streaming.receivers
 
 import akka.actor.{ Actor, PoisonPill, Props, SupervisorStrategy }
-import akka.actor.{ actorRef2Scala, ActorRef }
+import akka.actor.actorRef2Scala
 import akka.actor.{ PossiblyHarmful, OneForOneStrategy }
 
 import spark.storage.StorageLevel

@@ -1,7 +1,6 @@
 package spark.streaming
 
 import spark.streaming.StreamingContext._
-import collection.mutable.ArrayBuffer
 
 class WindowOperationsSuite extends TestSuiteBase {
 

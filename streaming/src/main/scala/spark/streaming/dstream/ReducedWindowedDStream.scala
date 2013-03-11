@@ -3,7 +3,7 @@ package spark.streaming.dstream
 import spark.streaming.StreamingContext._
 
 import spark.RDD
-import spark.rdd.{CoGroupedRDD, MapPartitionsRDD}
+import spark.rdd.CoGroupedRDD
 import spark.Partitioner
 import spark.SparkContext._
 import spark.storage.StorageLevel

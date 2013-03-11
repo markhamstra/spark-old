@@ -7,7 +7,7 @@ import akka.actor.Props
 import akka.util.ByteString
 
 import dstream.SparkFlumeEvent
-import java.net.{InetSocketAddress, SocketException, Socket, ServerSocket}
+import java.net.{InetSocketAddress, SocketException, ServerSocket}
 import java.io.{File, BufferedWriter, OutputStreamWriter}
 import java.util.concurrent.{TimeUnit, ArrayBlockingQueue}
 import collection.mutable.{SynchronizedBuffer, ArrayBuffer}
@@ -15,13 +15,11 @@ import util.ManualClock
 import spark.storage.StorageLevel
 import spark.streaming.receivers.Receiver
 import spark.Logging
-import scala.util.Random
 import org.apache.commons.io.FileUtils
 import org.scalatest.BeforeAndAfter
 import org.apache.flume.source.avro.AvroSourceProtocol
 import org.apache.flume.source.avro.AvroFlumeEvent
-import org.apache.flume.source.avro.Status
-import org.apache.avro.ipc.{specific, NettyTransceiver}
+import org.apache.avro.ipc.NettyTransceiver
 import org.apache.avro.ipc.specific.SpecificRequestor
 import java.nio.ByteBuffer
 import collection.JavaConversions._

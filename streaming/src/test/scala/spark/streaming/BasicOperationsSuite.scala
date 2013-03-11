@@ -1,7 +1,6 @@
 package spark.streaming
 
 import spark.streaming.StreamingContext._
-import scala.runtime.RichInt
 import util.ManualClock
 
 class BasicOperationsSuite extends TestSuiteBase {

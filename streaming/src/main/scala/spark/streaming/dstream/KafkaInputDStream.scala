@@ -2,20 +2,17 @@ package spark.streaming.dstream
 
 import spark.Logging
 import spark.storage.StorageLevel
-import spark.streaming.{Time, DStreamCheckpointData, StreamingContext}
+import spark.streaming.StreamingContext
 
 import java.util.Properties
 import java.util.concurrent.Executors
 
 import kafka.consumer._
-import kafka.message.{Message, MessageSet, MessageAndMetadata}
 import kafka.serializer.StringDecoder
-import kafka.utils.{Utils, ZKGroupTopicDirs}
+import kafka.utils.ZKGroupTopicDirs
 import kafka.utils.ZkUtils._
 
 import scala.collection.Map
-import scala.collection.mutable.HashMap
-import scala.collection.JavaConversions._
 
 
 // Key for a specific Kafka Partition: (broker, topic, group, part)

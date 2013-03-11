@@ -2,13 +2,10 @@ package spark.streaming
 
 import spark.Logging
 import spark.streaming.util.MasterFailureTest
-import StreamingContext._
 
 import org.scalatest.{FunSuite, BeforeAndAfter}
-import com.google.common.io.Files
 import java.io.File
 import org.apache.commons.io.FileUtils
-import collection.mutable.ArrayBuffer
 
 
 /**

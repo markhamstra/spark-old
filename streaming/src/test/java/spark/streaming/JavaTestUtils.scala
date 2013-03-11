@@ -2,8 +2,7 @@ package spark.streaming
 
 import collection.mutable.{SynchronizedBuffer, ArrayBuffer}
 import java.util.{List => JList}
-import spark.streaming.api.java.{JavaPairDStream, JavaDStreamLike, JavaDStream, JavaStreamingContext}
-import spark.streaming._
+import spark.streaming.api.java.{JavaDStreamLike, JavaDStream, JavaStreamingContext}
 import java.util.ArrayList
 import collection.JavaConversions._
 

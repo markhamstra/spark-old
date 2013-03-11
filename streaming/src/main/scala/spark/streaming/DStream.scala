@@ -7,13 +7,10 @@ import StreamingContext._
 import spark.{RDD, Logging}
 import spark.storage.StorageLevel
 
-import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 
 import java.io.{ObjectInputStream, IOException, ObjectOutputStream}
 
-import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.hadoop.conf.Configuration
 
 /**
  * A Discretized Stream (DStream), the basic abstraction in Spark Streaming, is a continuous

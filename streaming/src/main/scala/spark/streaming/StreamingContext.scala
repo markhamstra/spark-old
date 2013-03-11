@@ -7,7 +7,6 @@ import akka.zeromq.Subscribe
 import spark.streaming.dstream._
 
 import spark._
-import spark.streaming.receivers.ActorReceiver
 import spark.streaming.receivers.ReceiverSupervisorStrategy
 import spark.streaming.receivers.ZeroMQReceiver
 import spark.storage.StorageLevel

@@ -1,5 +1,7 @@
 package spark.streaming;
 
+import akka.actor.Props;
+import akka.zeromq.Subscribe;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -13,24 +15,16 @@ import scala.Tuple2;
 import spark.HashPartitioner;
 import spark.api.java.JavaPairRDD;
 import spark.api.java.JavaRDD;
-import spark.api.java.JavaRDDLike;
-import spark.api.java.JavaPairRDD;
 import spark.api.java.JavaSparkContext;
 import spark.api.java.function.*;
 import spark.storage.StorageLevel;
 import spark.streaming.api.java.JavaDStream;
 import spark.streaming.api.java.JavaPairDStream;
 import spark.streaming.api.java.JavaStreamingContext;
-import spark.streaming.JavaTestUtils;
-import spark.streaming.JavaCheckpointTestUtils;
 import spark.streaming.dstream.KafkaPartitionKey;
-import spark.streaming.InputStreamsSuite;
 
 import java.io.*;
 import java.util.*;
-
-import akka.actor.Props;
-import akka.zeromq.Subscribe;
 
 
 

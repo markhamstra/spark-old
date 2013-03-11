@@ -1,7 +1,6 @@
 package spark.streaming.api.java
 
 import spark.streaming._
-import receivers.{ActorReceiver, ReceiverSupervisorStrategy}
 import spark.streaming.dstream._
 import spark.storage.StorageLevel
 

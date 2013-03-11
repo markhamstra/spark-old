@@ -1,6 +1,6 @@
 package spark.streaming
 
-import spark.{Logging, Utils}
+import spark.Logging
 
 import org.apache.hadoop.fs.{FileUtil, Path}
 import org.apache.hadoop.conf.Configuration

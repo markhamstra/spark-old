@@ -1,7 +1,7 @@
 package spark.streaming
 
 import spark.streaming.dstream.{NetworkInputDStream, NetworkReceiver}
-import spark.streaming.dstream.{StopReceiver, ReportBlock, ReportError}
+import spark.streaming.dstream.StopReceiver
 import spark.Logging
 import spark.SparkEnv
 import spark.SparkContext._
@@ -10,9 +10,7 @@ import scala.collection.mutable.HashMap
 import scala.collection.mutable.Queue
 
 import akka.actor._
-import akka.pattern.ask
 import akka.util.duration._
-import akka.dispatch._
 
 private[streaming] sealed trait NetworkInputTrackerMessage
 private[streaming] case class RegisterReceiver(streamId: Int, receiverActor: ActorRef) extends NetworkInputTrackerMessage

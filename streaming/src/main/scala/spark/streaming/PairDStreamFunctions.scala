@@ -7,11 +7,10 @@ import spark.streaming.dstream.{MapValuedDStream, FlatMapValuedDStream}
 
 import spark.{Manifests, RDD, Partitioner, HashPartitioner}
 import spark.SparkContext._
-import spark.storage.StorageLevel
 
 import scala.collection.mutable.ArrayBuffer
 
-import org.apache.hadoop.mapred.{JobConf, OutputFormat}
+import org.apache.hadoop.mapred.JobConf
 import org.apache.hadoop.mapreduce.{OutputFormat => NewOutputFormat}
 import org.apache.hadoop.mapred.OutputFormat
 import org.apache.hadoop.conf.Configuration

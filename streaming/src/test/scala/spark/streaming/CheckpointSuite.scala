@@ -6,9 +6,8 @@ import java.io.File
 import runtime.RichInt
 import org.scalatest.BeforeAndAfter
 import org.apache.commons.io.FileUtils
-import collection.mutable.{SynchronizedBuffer, ArrayBuffer}
-import util.{Clock, ManualClock}
-import scala.util.Random
+import collection.mutable.ArrayBuffer
+import util.ManualClock
 import com.google.common.io.Files
 
 

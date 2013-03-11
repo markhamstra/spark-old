@@ -14,7 +14,7 @@ import java.util.UUID
 import com.google.common.io.Files
 
 import org.apache.commons.io.FileUtils
-import org.apache.hadoop.fs.{FileUtil, FileSystem, Path}
+import org.apache.hadoop.fs.Path
 import org.apache.hadoop.conf.Configuration
 
 
