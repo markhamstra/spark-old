@@ -5,10 +5,8 @@
 
 package spark.repl
 
-import scala.tools.nsc._
-import scala.tools.nsc.interpreter._
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 
 trait SparkImports {
   self: SparkIMain =>

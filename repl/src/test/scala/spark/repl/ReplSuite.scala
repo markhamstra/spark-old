@@ -4,7 +4,6 @@ import java.io._
 import java.net.URLClassLoader
 
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.JavaConversions._
 
 import org.scalatest.FunSuite
 import com.google.common.io.Files

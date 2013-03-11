@@ -9,22 +9,18 @@ import scala.tools.nsc._
 import scala.tools.nsc.interpreter._
 
 import Predef.{ println => _, _ }
-import java.io.{ PrintWriter }
-import java.lang.reflect
+import java.io.PrintWriter
 import java.net.URL
 import util.{ Set => _, _ }
-import io.{ AbstractFile, PlainFile, VirtualDirectory }
+import io.{ AbstractFile, PlainFile }
 import reporters.{ ConsoleReporter, Reporter }
-import symtab.{ Flags, Names }
 import scala.tools.nsc.interpreter.{ Results => IR }
 import scala.tools.util.PathResolver
 import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional }
 import ScalaClassLoader.URLClassLoader
 import Exceptional.unwrap
-import scala.collection.{ mutable, immutable }
-import scala.PartialFunction.{ cond, condOpt }
-import scala.util.control.Exception.{ ultimately }
-import scala.reflect.NameTransformer
+import scala.collection.mutable
+import scala.util.control.Exception.ultimately
 import SparkIMain._
 
 import spark.HttpServer

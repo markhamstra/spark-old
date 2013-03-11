@@ -11,7 +11,6 @@ import scala.tools.nsc.interpreter._
 import scala.tools.jline.console.ConsoleReader
 import scala.tools.jline.console.completer._
 import session._
-import scala.collection.JavaConverters._
 import Completion._
 import io.Streamable.slurp
 

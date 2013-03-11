@@ -8,8 +8,6 @@ package spark.repl
 import scala.tools.nsc._
 import scala.tools.nsc.interpreter._
 
-import scala.tools.jline._
-import scala.tools.jline.console.completer._
 import Completion._
 import collection.mutable.ListBuffer
 

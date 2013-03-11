@@ -9,16 +9,12 @@ import scala.tools.nsc._
 import scala.tools.nsc.interpreter._
 
 import Predef.{ println => _, _ }
-import java.io.{ BufferedReader, FileReader, PrintWriter }
-import scala.sys.process.Process
+import java.io.{ BufferedReader, PrintWriter }
 import session._
 import scala.tools.nsc.interpreter.{ Results => IR }
-import scala.tools.util.{ SignalManager, Signallable, Javap }
-import scala.annotation.tailrec
-import scala.util.control.Exception.{ ignoring }
-import scala.collection.mutable.ListBuffer
-import scala.concurrent.ops
-import util.{ ClassPath, Exceptional, stringFromWriter, stringFromStream }
+import scala.tools.util.{ SignalManager, Javap }
+import scala.util.control.Exception.ignoring
+import util.{ ClassPath, Exceptional, stringFromStream }
 import interpreter._
 import io.{ File, Sources }
 

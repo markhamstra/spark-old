@@ -1,14 +1,12 @@
 package spark.repl
 
 import java.io.{ByteArrayOutputStream, InputStream}
-import java.net.{URI, URL, URLClassLoader, URLEncoder}
-import java.util.concurrent.{Executors, ExecutorService}
+import java.net.{URI, URL, URLEncoder}
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 
 import org.objectweb.asm._
-import org.objectweb.asm.commons.EmptyVisitor
 import org.objectweb.asm.Opcodes._
 
 

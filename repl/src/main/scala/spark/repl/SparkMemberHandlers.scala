@@ -5,13 +5,10 @@
 
 package spark.repl
 
-import scala.tools.nsc._
 import scala.tools.nsc.interpreter._
 
-import scala.collection.{ mutable, immutable }
-import scala.PartialFunction.cond
+import scala.collection.mutable
 import scala.reflect.NameTransformer
-import util.Chars
 
 trait SparkMemberHandlers {
   val intp: SparkIMain
