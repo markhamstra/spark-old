@@ -6,7 +6,6 @@ import spark.TaskState.TaskState
 import spark.util.AkkaUtils
 import akka.actor.{ActorRef, Actor, Props, Terminated}
 import akka.remote.{RemoteClientLifeCycleEvent, RemoteClientShutdown, RemoteClientDisconnected}
-import java.util.concurrent.{TimeUnit, ThreadPoolExecutor, SynchronousQueue}
 import spark.scheduler.cluster._
 import spark.scheduler.cluster.RegisteredExecutor
 import spark.scheduler.cluster.LaunchTask

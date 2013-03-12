@@ -1,6 +1,5 @@
 package spark.scheduler.cluster
 
-import java.io.{File, FileInputStream, FileOutputStream}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap

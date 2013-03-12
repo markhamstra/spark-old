@@ -2,10 +2,10 @@ package spark.broadcast
 
 import java.io._
 import java.net._
-import java.util.{BitSet, Comparator, Timer, TimerTask, UUID}
+import java.util.{BitSet, Timer, TimerTask}
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.collection.mutable.{ListBuffer, Map, Set}
+import scala.collection.mutable.{ListBuffer, Set}
 import scala.math
 
 import spark._

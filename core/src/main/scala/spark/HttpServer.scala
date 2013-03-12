@@ -1,7 +1,6 @@
 package spark
 
 import java.io.File
-import java.net.InetAddress
 
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.bio.SocketConnector

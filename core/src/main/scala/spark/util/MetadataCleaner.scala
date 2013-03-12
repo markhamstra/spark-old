@@ -1,6 +1,5 @@
 package spark.util
 
-import java.util.concurrent.{TimeUnit, ScheduledFuture, Executors}
 import java.util.{TimerTask, Timer}
 import spark.Logging
 

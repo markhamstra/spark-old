@@ -7,7 +7,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.io.Writable
 import org.apache.hadoop.mapreduce._
 
-import spark.{Dependency, Logging, Partition, RDD, SerializableWritable, SparkContext, TaskContext}
+import spark.{Logging, Partition, RDD, SerializableWritable, SparkContext, TaskContext}
 
 
 private[spark]

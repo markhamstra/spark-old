@@ -37,7 +37,7 @@ import spark.partial.PartialResult
 import spark.rdd.{CheckpointRDD, HadoopRDD, NewHadoopRDD, UnionRDD, ParallelCollectionRDD}
 import spark.scheduler._
 import spark.scheduler.local.LocalScheduler
-import spark.scheduler.cluster.{SparkDeploySchedulerBackend, SchedulerBackend, ClusterScheduler}
+import spark.scheduler.cluster.{SparkDeploySchedulerBackend, ClusterScheduler}
 import spark.scheduler.mesos.{CoarseMesosSchedulerBackend, MesosSchedulerBackend}
 import spark.storage.BlockManagerUI
 import spark.util.{MetadataCleaner, TimeStampedHashMap}

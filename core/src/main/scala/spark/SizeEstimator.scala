@@ -7,7 +7,6 @@ import java.util.IdentityHashMap
 import java.util.concurrent.ConcurrentHashMap
 import java.util.Random
 
-import javax.management.MBeanServer
 import java.lang.management.ManagementFactory
 
 import scala.collection.mutable.ArrayBuffer

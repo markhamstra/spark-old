@@ -1,12 +1,10 @@
 package spark.deploy.master
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.dispatch.Await
 import akka.pattern.ask
 import akka.util.Timeout
 import akka.util.duration._
 import cc.spray.Directives
-import cc.spray.directives._
 import cc.spray.typeconversion.TwirlSupport._
 import cc.spray.http.MediaTypes
 import cc.spray.typeconversion.SprayJsonSupport._

@@ -1,10 +1,9 @@
 package spark.deploy
 
-import akka.actor.{ActorRef, Props, Actor, ActorSystem, Terminated}
+import akka.actor.ActorSystem
 
 import spark.deploy.worker.Worker
 import spark.deploy.master.Master
-import spark.util.AkkaUtils
 import spark.{Logging, Utils}
 
 import scala.collection.mutable.ArrayBuffer

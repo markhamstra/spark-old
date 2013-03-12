@@ -1,7 +1,6 @@
 package spark
 
-import akka.actor.{Actor, ActorRef, Props, ActorSystemImpl, ActorSystem}
-import akka.remote.RemoteActorRefProvider
+import akka.actor.{Actor, ActorRef, Props, ActorSystem}
 
 import serializer.Serializer
 import spark.broadcast.BroadcastManager

@@ -1,6 +1,5 @@
 package spark
 
-import java.lang.reflect.Field
 
 import scala.collection.mutable.Map
 import scala.collection.mutable.Set

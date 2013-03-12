@@ -2,13 +2,8 @@ package spark.storage
 
 import java.nio.ByteBuffer
 
-import scala.actors._
-import scala.actors.Actor._
-import scala.actors.remote._
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
-import scala.util.Random
 
-import spark.{Logging, Utils, SparkEnv}
+import spark.{Logging, Utils}
 import spark.network._
 
 /**

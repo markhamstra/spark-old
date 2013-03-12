@@ -1,7 +1,6 @@
 package spark.deploy.worker
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.dispatch.Await
 import akka.pattern.ask
 import akka.util.Timeout
 import akka.util.duration._

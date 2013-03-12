@@ -1,6 +1,5 @@
 package spark.scheduler
 
-import scala.collection.mutable.ArrayBuffer
 
 /**
  * An object that waits for a DAGScheduler job to complete. As tasks finish, it passes their

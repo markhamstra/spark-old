@@ -1,7 +1,6 @@
 package spark.rdd
 
 import spark.{Partitioner, RDD, SparkEnv, ShuffleDependency, Partition, TaskContext}
-import spark.SparkContext._
 
 private[spark] class ShuffledRDDPartition(val idx: Int) extends Partition {
   override val index = idx

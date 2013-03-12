@@ -3,7 +3,6 @@ package spark.scheduler.cluster
 import spark.{Utils, Logging, SparkContext}
 import spark.deploy.client.{Client, ClientListener}
 import spark.deploy.{Command, ApplicationDescription}
-import scala.collection.mutable.HashMap
 
 private[spark] class SparkDeploySchedulerBackend(
     scheduler: ClusterScheduler,

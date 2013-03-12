@@ -1,6 +1,6 @@
 package spark
 
-import java.io.{File}
+import java.io.File
 import com.google.common.io.Files
 
 private[spark] class HttpFileServer extends Logging {

@@ -1,7 +1,7 @@
 package spark
 
 import org.apache.hadoop.fs.Path
-import rdd.{CheckpointRDD, CoalescedRDD}
+import rdd.CheckpointRDD
 import scheduler.{ResultTask, ShuffleMapTask}
 
 /**

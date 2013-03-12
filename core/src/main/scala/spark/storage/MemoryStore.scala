@@ -1,7 +1,6 @@
 package spark.storage
 
 import java.util.LinkedHashMap
-import java.util.concurrent.ArrayBlockingQueue
 import spark.{SizeEstimator, Utils}
 import java.nio.ByteBuffer
 import collection.mutable.ArrayBuffer

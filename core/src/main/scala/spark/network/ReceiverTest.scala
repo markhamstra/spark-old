@@ -1,7 +1,6 @@
 package spark.network
 
 import java.nio.ByteBuffer
-import java.net.InetAddress
 
 private[spark] object ReceiverTest {
 

@@ -2,10 +2,9 @@ package spark.storage
 
 import java.io.{InputStream, OutputStream}
 import java.nio.{ByteBuffer, MappedByteBuffer}
-import java.util.concurrent.{ConcurrentHashMap, LinkedBlockingQueue}
+import java.util.concurrent.LinkedBlockingQueue
 
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, Queue}
-import scala.collection.JavaConversions._
+import scala.collection.mutable.{ArrayBuffer, HashSet, Queue}
 
 import akka.actor.{ActorSystem, Cancellable, Props}
 import akka.dispatch.{Await, Future}
@@ -16,7 +15,7 @@ import com.ning.compress.lzf.{LZFInputStream, LZFOutputStream}
 
 import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream
 
-import spark.{Logging, SizeEstimator, SparkEnv, SparkException, Utils}
+import spark.{Logging, SparkException, Utils}
 import spark.network._
 import spark.serializer.Serializer
 import spark.util.{ByteBufferInputStream, IdGenerator, MetadataCleaner, TimeStampedHashMap}

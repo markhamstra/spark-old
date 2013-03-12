@@ -5,12 +5,7 @@ import java.util.{HashMap => JHashMap}
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
-import scala.collection.JavaConversions._
 
-import it.unimi.dsi.fastutil.io.FastBufferedOutputStream
-
-import com.ning.compress.lzf.LZFInputStream
-import com.ning.compress.lzf.LZFOutputStream
 
 import spark._
 import executor.ShuffleWriteMetrics

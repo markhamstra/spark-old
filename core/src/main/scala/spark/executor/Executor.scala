@@ -1,14 +1,12 @@
 package spark.executor
 
-import java.io.{File, FileOutputStream}
-import java.net.{URI, URL, URLClassLoader}
+import java.io.File
+import java.net.URLClassLoader
 import java.util.concurrent._
 
-import org.apache.hadoop.fs.FileUtil
 
-import scala.collection.mutable.{ArrayBuffer, Map, HashMap}
+import scala.collection.mutable.HashMap
 
-import spark.broadcast._
 import spark.scheduler._
 import spark._
 import java.nio.ByteBuffer

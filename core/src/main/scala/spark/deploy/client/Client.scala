@@ -5,7 +5,7 @@ import akka.actor._
 import akka.pattern.ask
 import akka.util.duration._
 import akka.pattern.AskTimeoutException
-import spark.{SparkException, Logging}
+import spark.Logging
 import akka.remote.RemoteClientLifeCycleEvent
 import akka.remote.RemoteClientShutdown
 import spark.deploy.RegisterApplication

@@ -3,11 +3,9 @@ package spark.storage
 import java.util.{HashMap => JHashMap}
 
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
-import scala.collection.JavaConversions._
 import scala.util.Random
 
 import akka.actor.{Actor, ActorRef, Cancellable}
-import akka.util.{Duration, Timeout}
 import akka.util.duration._
 
 import spark.{Logging, Utils}

@@ -2,8 +2,6 @@ package spark.storage
 
 import akka.actor.Actor
 
-import spark.{Logging, SparkException, Utils}
-
 
 /**
  * An actor to take commands from the master to execute options. For example,

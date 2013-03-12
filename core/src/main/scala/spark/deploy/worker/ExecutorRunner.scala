@@ -1,12 +1,9 @@
 package spark.deploy.worker
 
 import java.io._
-import spark.deploy.{ExecutorState, ExecutorStateChanged, ApplicationDescription}
+import spark.deploy.{ExecutorState, ApplicationDescription}
 import akka.actor.ActorRef
 import spark.{Utils, Logging}
-import java.net.{URI, URL}
-import org.apache.hadoop.fs.{Path, FileSystem}
-import org.apache.hadoop.conf.Configuration
 import scala.Some
 import spark.deploy.ExecutorStateChanged
 

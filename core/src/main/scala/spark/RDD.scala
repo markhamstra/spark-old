@@ -1,13 +1,11 @@
 package spark
 
-import java.net.URL
-import java.util.{Date, Random}
+import java.util.Random
 import java.util.{HashMap => JHashMap}
 
 import scala.collection.Map
 import scala.collection.JavaConversions.mapAsScalaMap
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.HashMap
 
 import org.apache.hadoop.io.BytesWritable
 import org.apache.hadoop.io.NullWritable

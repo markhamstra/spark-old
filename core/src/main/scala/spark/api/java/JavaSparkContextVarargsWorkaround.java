@@ -1,6 +1,5 @@
 package spark.api.java;
 
-import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 

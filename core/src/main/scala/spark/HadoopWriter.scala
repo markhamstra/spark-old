@@ -2,14 +2,10 @@ package org.apache.hadoop.mapred
 
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.util.ReflectionUtils
-import org.apache.hadoop.io.NullWritable
-import org.apache.hadoop.io.Text
 
 import java.text.SimpleDateFormat
 import java.text.NumberFormat
 import java.io.IOException
-import java.net.URI
 import java.util.Date
 
 import spark.Logging

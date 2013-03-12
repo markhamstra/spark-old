@@ -1,12 +1,10 @@
 package spark.network
 
 import spark._
-import spark.SparkContext._
 
 import scala.io.Source
 
 import java.nio.ByteBuffer
-import java.net.InetAddress
 
 import akka.dispatch.Await
 import akka.util.duration._

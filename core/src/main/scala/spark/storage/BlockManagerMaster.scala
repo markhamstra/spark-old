@@ -1,19 +1,15 @@
 package spark.storage
 
-import java.io._
 import java.util.{HashMap => JHashMap}
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
-import scala.util.Random
+import scala.collection.mutable.ArrayBuffer
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.actor.ActorRef
 import akka.dispatch.Await
 import akka.pattern.ask
-import akka.util.{Duration, Timeout}
 import akka.util.duration._
 
-import spark.{Logging, SparkException, Utils}
+import spark.{Logging, SparkException}
 
 private[spark] class BlockManagerMaster(var driverActor: ActorRef) extends Logging {
 

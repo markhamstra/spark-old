@@ -5,7 +5,7 @@ import java.util.{HashMap => JHashMap}
 import scala.collection.JavaConversions
 import scala.collection.mutable.ArrayBuffer
 
-import spark.{Aggregator, Logging, Partitioner, RDD, SparkEnv, Partition, TaskContext}
+import spark.{Aggregator, Partitioner, RDD, SparkEnv, Partition, TaskContext}
 import spark.{Dependency, OneToOneDependency, ShuffleDependency}
 
 

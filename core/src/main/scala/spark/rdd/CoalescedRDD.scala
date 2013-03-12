@@ -1,6 +1,6 @@
 package spark.rdd
 
-import spark.{Dependency, OneToOneDependency, NarrowDependency, RDD, Partition, TaskContext}
+import spark.{Dependency, NarrowDependency, RDD, Partition, TaskContext}
 import java.io.{ObjectOutputStream, IOException}
 
 private[spark] case class CoalescedRDDPartition(
