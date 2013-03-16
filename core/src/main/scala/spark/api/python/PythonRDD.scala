@@ -32,11 +32,11 @@ private[spark] class PythonRDD[T: ClassManifest](
     this(parent, PipedRDD.tokenize(command), envVars, preservePartitoning, pythonExec,
       broadcastVars, accumulator)
 
-  override def getSplits = parent.splits
+  override def getPartitions = parent.partitions
 
   override val partitioner = if (preservePartitoning) parent.partitioner else None
 
-  override def compute(split: Split, context: TaskContext): Iterator[Array[Byte]] = {
+  override def compute(split: Partition, context: TaskContext): Iterator[Array[Byte]] = {
     val SPARK_HOME = new ProcessBuilder().environment().get("SPARK_HOME")
 
     val pb = new ProcessBuilder(Seq(pythonExec, SPARK_HOME + "/python/pyspark/worker.py"))
@@ -51,7 +51,7 @@ private[spark] class PythonRDD[T: ClassManifest](
     val env = SparkEnv.get
 
     // Start a thread to print the process's stderr to ours
-    new Thread("stderr reader for " + command) {
+    new Thread("stderr reader for " + pythonExec) {
       override def run() {
         for (line <- Source.fromInputStream(proc.getErrorStream).getLines) {
           System.err.println(line)
@@ -60,12 +60,12 @@ private[spark] class PythonRDD[T: ClassManifest](
     }.start()
 
     // Start a thread to feed the process input from our parent's iterator
-    new Thread("stdin writer for " + command) {
+    new Thread("stdin writer for " + pythonExec) {
       override def run() {
         SparkEnv.set(env)
         val out = new PrintWriter(proc.getOutputStream)
         val dOut = new DataOutputStream(proc.getOutputStream)
-        // Split index
+        // Partition index
         dOut.writeInt(split.index)
         // sparkFilesDir
         PythonRDD.writeAsPickle(SparkFiles.getRootDirectory, dOut)
@@ -155,8 +155,8 @@ private class PythonException(msg: String) extends Exception(msg)
  */
 private class PairwiseRDD(prev: RDD[Array[Byte]]) extends
   RDD[(Array[Byte], Array[Byte])](prev) {
-  override def getSplits = prev.splits
-  override def compute(split: Split, context: TaskContext) =
+  override def getPartitions = prev.partitions
+  override def compute(split: Partition, context: TaskContext) =
     prev.iterator(split, context).grouped(2).map {
       case Seq(a, b) => (a, b)
       case x          => throw new Exception("PairwiseRDD: unexpected value: " + x)

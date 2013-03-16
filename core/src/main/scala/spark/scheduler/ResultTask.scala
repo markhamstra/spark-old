@@ -67,11 +67,12 @@ private[spark] class ResultTask[T, U](
   var split = if (rdd == null) {
     null
   } else {
-    rdd.splits(partition)
+    rdd.partitions(partition)
   }
 
   override def run(attemptId: Long): U = {
     val context = new TaskContext(stageId, partition, attemptId)
+    metrics = Some(context.taskMetrics)
     try {
       func(context, rdd.iterator(split, context))
     } finally {
@@ -85,7 +86,7 @@ private[spark] class ResultTask[T, U](
 
   override def writeExternal(out: ObjectOutput) {
     RDDCheckpointData.synchronized {
-      split = rdd.splits(partition)
+      split = rdd.partitions(partition)
       out.writeInt(stageId)
       val bytes = ResultTask.serializeInfo(
         stageId, rdd, func.asInstanceOf[(TaskContext, Iterator[_]) => _])
@@ -107,6 +108,6 @@ private[spark] class ResultTask[T, U](
     func = func_.asInstanceOf[(TaskContext, Iterator[T]) => U]
     partition = in.readInt()
     val outputId = in.readInt()
-    split = in.readObject().asInstanceOf[Split]
+    split = in.readObject().asInstanceOf[Partition]
   }
 }

@@ -4,7 +4,7 @@ import java.util.{List => JList}
 import scala.Tuple2
 import scala.collection.JavaConversions._
 
-import spark.{SparkContext, Split, RDD, TaskContext}
+import spark.{SparkContext, Partition, RDD, TaskContext}
 import spark.api.java.JavaPairRDD._
 import spark.api.java.function.{Function2 => JFunction2, Function => JFunction, _}
 import spark.partial.{PartialResult, BoundedDouble}
@@ -14,7 +14,7 @@ import spark.RDD.PartitionMapper
 import spark.api.java.ManifestHelper.fakeManifest
 
 
-trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends PairFlatMapWorkaround[T] {
+trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends Serializable {
   def wrapRDD(rdd: RDD[T]): This
 
   implicit val classManifest: ClassManifest[T]
@@ -22,7 +22,7 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends PairFlatMapWorkaround
   def rdd: RDD[T]
 
   /** Set of partitions in this RDD. */
-  def splits: JList[Split] = new java.util.ArrayList(rdd.splits.toSeq)
+  def splits: JList[Partition] = new java.util.ArrayList(rdd.partitions.toSeq)
 
   /** The [[spark.SparkContext]] that this RDD was created on. */
   def context: SparkContext = rdd.context
@@ -38,7 +38,7 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends PairFlatMapWorkaround
    * This should ''not'' be called by users directly, but is available for implementors of custom
    * subclasses of RDD.
    */
-  def iterator(split: Split, taskContext: TaskContext): java.util.Iterator[T] =
+  def iterator(split: Partition, taskContext: TaskContext): java.util.Iterator[T] =
     asJavaIterator(rdd.iterator(split, taskContext))
 
   // Transformations (return a new RDD)
@@ -84,12 +84,13 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends PairFlatMapWorkaround
   }
 
   /**
-   * Part of the workaround for SPARK-668; called in PairFlatMapWorkaround.java.
+   *  Return a new RDD by first applying a function to all elements of this
+   *  RDD, and then flattening the results.
    */
-  private[spark] def doFlatMap[K, V](f: PairFlatMapFunction[T, K, V]): JavaPairRDD[K, V] = {
+  def flatMap[K2, V2](f: PairFlatMapFunction[T, K2, V2]): JavaPairRDD[K2, V2] = {
     import scala.collection.JavaConverters._
     def fn = (x: T) => f.apply(x).asScala
-    def cm = implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[Tuple2[K, V]]]
+    def cm = implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[Tuple2[K2, V2]]]
     JavaPairRDD.fromRDD(rdd.flatMap(fn)(cm))(f.keyType(), f.valueType())
   }
 
@@ -112,8 +113,8 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends PairFlatMapWorkaround
   /**
    * Return a new RDD by applying a function to each partition of this RDD.
    */
-  def mapPartitions[K, V](f: PairFlatMapFunction[java.util.Iterator[T], K, V]):
-  JavaPairRDD[K, V] = {
+  def mapPartitions[K2, V2](f: PairFlatMapFunction[java.util.Iterator[T], K2, V2]):
+  JavaPairRDD[K2, V2] = {
     def fn = (x: Iterator[T]) => asScalaIterator(f.apply(asJavaIterator(x)).iterator())
     JavaPairRDD.fromRDD(rdd.mapPartitions(fn))(f.keyType(), f.valueType())
   }
@@ -173,12 +174,12 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends PairFlatMapWorkaround
    * Return an RDD of grouped elements. Each group consists of a key and a sequence of elements
    * mapping to that key.
    */
-  def groupBy[K](f: JFunction[T, K], numSplits: Int): JavaPairRDD[K, JList[T]] = {
+  def groupBy[K](f: JFunction[T, K], numPartitions: Int): JavaPairRDD[K, JList[T]] = {
     implicit val kcm: ClassManifest[K] =
       implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[K]]
     implicit val vcm: ClassManifest[JList[T]] =
       implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[JList[T]]]
-    JavaPairRDD.fromRDD(groupByResultToJava(rdd.groupBy(f, numSplits)(f.returnType)))(kcm, vcm)
+    JavaPairRDD.fromRDD(groupByResultToJava(rdd.groupBy(f, numPartitions)(f.returnType)))(kcm, vcm)
   }
 
   /**
@@ -228,7 +229,7 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends PairFlatMapWorkaround
   }
 
   /**
-   * Reduces the elements of this RDD using the specified associative binary operator.
+   * Reduces the elements of this RDD using the specified commutative and associative binary operator.
    */
   def reduce(f: JFunction2[T, T, T]): T = rdd.reduce(f)
 
@@ -360,6 +361,6 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends PairFlatMapWorkaround
 
   /** A description of this RDD and its recursive dependencies for debugging. */
   def toDebugString(): String = {
-    rdd.toDebugString()
+    rdd.toDebugString
   }
 }
