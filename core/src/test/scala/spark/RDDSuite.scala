@@ -185,7 +185,7 @@ class RDDSuite extends FunSuite with LocalSparkContext {
     sc = new SparkContext("local[4]", "test")
     val data = sc.parallelize(1 to 100, 4)
     val acc = sc.accumulableCollection(new HashMap[Int,Set[Int]]())
-    val mapped = data.mapWithSetupAndCleanup(new PartitionMapper[Int,Int](){
+    val mapped = data.mapWithSetup(new PartitionMapper[Int,Int](){
       var partition = -1
       var values = Set[Int]()
       def setup(partition:Int) {this.partition = partition}

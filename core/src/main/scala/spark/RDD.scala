@@ -370,7 +370,7 @@ abstract class RDD[T: ClassManifest](
    * This might be useful if you need to setup some resources per task & cleanup them up at the end, eg.
    * a db connection
    */
-  def mapWithSetupAndCleanup[U: ClassManifest](
+  def mapWithSetup[U: ClassManifest](
     m: PartitionMapper[T,U],
     preservesPartitioning: Boolean = false): RDD[U] =
     new MapPartitionsWithSetupAndCleanup(this, m, preservesPartitioning)

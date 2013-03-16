@@ -123,16 +123,16 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends Serializable {
    * Return a new RDD by applying a function to each element of the RDD, with an additional
    * setup & cleanup that happens before & after computing each partition
    */
-  def mapWithSetupAndCleanup[U](m: PartitionMapper[T,U]): JavaRDD[U] = {
-    JavaRDD.fromRDD(rdd.mapWithSetupAndCleanup(m)(fakeManifest[U]))(fakeManifest[U])
+  def mapWithSetup[U](m: PartitionMapper[T,U]): JavaRDD[U] = {
+    JavaRDD.fromRDD(rdd.mapWithSetup(m)(fakeManifest[U]))(fakeManifest[U])
   }
 
   /**
    * Return a new RDD by applying a function to each element of the RDD, with an additional
    * setup & cleanup that happens before & after computing each partition
    */
-  def mapWithSetupAndCleanup[K,V](m: JavaPairPartitionMapper[T,K,V]): JavaPairRDD[K,V] = {
-    JavaPairRDD.fromRDD(rdd.mapWithSetupAndCleanup(m)(fakeManifest[(K,V)]))(
+  def mapWithSetup[K,V](m: JavaPairPartitionMapper[T,K,V]): JavaPairRDD[K,V] = {
+    JavaPairRDD.fromRDD(rdd.mapWithSetup(m)(fakeManifest[(K,V)]))(
       fakeManifest[K], fakeManifest[V])
   }
 
@@ -140,8 +140,8 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends Serializable {
    * Return a new RDD by applying a function to each element of the RDD, with an additional
    * setup & cleanup that happens before & after computing each partition
    */
-  def mapWithSetupAndCleanup(m: JavaDoublePartitionMapper[T]): JavaDoubleRDD = {
-    JavaDoubleRDD.fromRDD(rdd.mapWithSetupAndCleanup(m)(manifest[java.lang.Double]).asInstanceOf[RDD[Double]])
+  def mapWithSetup(m: JavaDoublePartitionMapper[T]): JavaDoubleRDD = {
+    JavaDoubleRDD.fromRDD(rdd.mapWithSetup(m)(manifest[java.lang.Double]).asInstanceOf[RDD[Double]])
   }
 
   /**

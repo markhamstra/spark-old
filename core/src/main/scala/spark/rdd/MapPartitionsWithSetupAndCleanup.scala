@@ -1,6 +1,6 @@
 package spark.rdd
 
-import spark.{TaskContext, Split, RDD}
+import spark.{TaskContext, Partition, RDD}
 import spark.RDD.PartitionMapper
 
 /**
@@ -13,11 +13,11 @@ class MapPartitionsWithSetupAndCleanup[U: ClassManifest, T: ClassManifest](
     preservesPartitioning: Boolean
 ) extends RDD[U](prev){
 
-  override def getSplits = firstParent[T].splits
+  override def getPartitions = firstParent[T].partitions
 
   override val partitioner = if (preservesPartitioning) prev.partitioner else None
 
-  override def compute(split: Split, context: TaskContext) = {
+  override def compute(split: Partition, context: TaskContext) = {
     context.addOnCompleteCallback(m.cleanup _)
     m.setup(split.index)
     firstParent[T].iterator(split, context).map(m.map _)
