@@ -402,7 +402,7 @@ public class JavaAPISuite implements Serializable {
     //the real test of the behavior is in the scala test, just make sure the java api wrappers are OK
     JavaRDD<Integer> rdd = sc.parallelize(Arrays.asList(1,2,3,4,5,6,7,8,9,10), 4);
 
-    JavaPairRDD<Integer,String> pairRdd = rdd.mapWithSetupAndCleanup(new JavaPairPartitionMapper<Integer, Integer, String>() {
+    JavaPairRDD<Integer,String> pairRdd = rdd.mapWithSetup(new JavaPairPartitionMapper<Integer, Integer, String>() {
       @Override
       public void setup(int partition) {
         System.out.println("setup " + partition);
@@ -423,7 +423,7 @@ public class JavaAPISuite implements Serializable {
       pairRdd.collect().toString());
 
 
-    JavaDoubleRDD doubleRdd = rdd.mapWithSetupAndCleanup(new JavaDoublePartitionMapper<Integer>() {
+    JavaDoubleRDD doubleRdd = rdd.mapWithSetup(new JavaDoublePartitionMapper<Integer>() {
       @Override
       public void setup(int partition) {
         System.out.println("setup" + partition);
