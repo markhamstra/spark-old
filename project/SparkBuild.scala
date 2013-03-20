@@ -95,7 +95,7 @@ object SparkBuild extends Build {
     "org.eclipse.jetty" % "jetty-server"    % "7.5.3.v20111011",
     "org.scalatest"    %% "scalatest"       % "1.9.1"  % "test",
     "org.scalacheck"   %% "scalacheck"      % "1.10.0" % "test",
-    "com.novocode"      % "junit-interface" % "0.8"    % "test"
+    "com.novocode"      % "junit-interface" % "0.8"    % "test",
     "org.easymock" % "easymock" % "3.1" % "test"
   ),
     parallelExecution := false,
