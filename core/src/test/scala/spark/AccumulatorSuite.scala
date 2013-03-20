@@ -34,7 +34,6 @@ class AccumulatorSuite extends FunSuite with ShouldMatchers with LocalSparkConte
   }
 
   test ("add value to collection accumulators") {
-    import SetAccum._
     val maxI = 1000
     for (nThreads <- List(1, 10)) { //test single & multi-threaded
       sc = new SparkContext("local[" + nThreads + "]", "test")
@@ -51,22 +50,7 @@ class AccumulatorSuite extends FunSuite with ShouldMatchers with LocalSparkConte
     }
   }
 
-  implicit object SetAccum extends AccumulableParam[mutable.Set[Any], Any] {
-    def addInPlace(t1: mutable.Set[Any], t2: mutable.Set[Any]) : mutable.Set[Any] = {
-      t1 ++= t2
-      t1
-    }
-    def addAccumulator(t1: mutable.Set[Any], t2: Any) : mutable.Set[Any] = {
-      t1 += t2
-      t1
-    }
-    def zero(t: mutable.Set[Any]) : mutable.Set[Any] = {
-      new mutable.HashSet[Any]()
-    }
-  }
-
   test ("value not readable in tasks") {
-    import SetAccum._
     val maxI = 1000
     for (nThreads <- List(1, 10)) { //test single & multi-threaded
       sc = new SparkContext("local[" + nThreads + "]", "test")
@@ -108,7 +92,6 @@ class AccumulatorSuite extends FunSuite with ShouldMatchers with LocalSparkConte
   }
 
   test ("localValue readable in tasks") {
-    import SetAccum._
     val maxI = 1000
     for (nThreads <- List(1, 10)) { //test single & multi-threaded
       sc = new SparkContext("local[" + nThreads + "]", "test")

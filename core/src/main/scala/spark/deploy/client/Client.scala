@@ -3,7 +3,7 @@ package spark.deploy.client
 import spark.deploy._
 import akka.actor._
 import akka.pattern.ask
-import akka.util.duration._
+import scala.concurrent.duration._
 import akka.pattern.AskTimeoutException
 import spark.{SparkException, Logging}
 import akka.remote.RemoteClientLifeCycleEvent
@@ -12,7 +12,7 @@ import spark.deploy.RegisterApplication
 import spark.deploy.master.Master
 import akka.remote.RemoteClientDisconnected
 import akka.actor.Terminated
-import akka.dispatch.Await
+import scala.concurrent.Await
 
 /**
  * The main class used to talk to a Spark deploy cluster. Takes a master URL, an app description,
