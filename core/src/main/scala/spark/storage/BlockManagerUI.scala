@@ -2,9 +2,9 @@ package spark.storage
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
-import akka.util.duration._
-import cc.spray.typeconversion.TwirlSupport._
-import cc.spray.Directives
+import scala.concurrent.duration._
+import spray.httpx.TwirlSupport._
+import spray.routing.Directives
 import spark.{Logging, SparkContext}
 import spark.util.AkkaUtils
 import spark.Utils
@@ -43,7 +43,7 @@ class BlockManagerUI(val actorSystem: ActorSystem, blockManagerMaster: ActorRef,
   val handler = {
     get {
       path("") {
-        completeWith {
+        complete {
           // Request the current storage status from the Master
           val storageStatusList = sc.getExecutorStorageStatus
           // Calculate macro-level statistics
@@ -58,7 +58,7 @@ class BlockManagerUI(val actorSystem: ActorSystem, blockManagerMaster: ActorRef,
       } ~
       path("rdd") {
         parameter("id") { id =>
-          completeWith {
+          complete {
             val prefix = "rdd_" + id.toString
             val storageStatusList = sc.getExecutorStorageStatus
             val filteredStorageStatusList = StorageUtils.
@@ -69,6 +69,7 @@ class BlockManagerUI(val actorSystem: ActorSystem, blockManagerMaster: ActorRef,
         }
       } ~
       pathPrefix("static") {
+        implicit val system = actorSystem
         getFromResourceDirectory(STATIC_RESOURCE_DIR)
       }
     }

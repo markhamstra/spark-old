@@ -1,6 +1,6 @@
 package spark.util
 
-import akka.actor.{Props, ActorSystem, ExtendedActorSystem}
+import akka.actor.{ActorRef, Props, ActorSystem, ExtendedActorSystem}
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import akka.pattern.ask
@@ -61,11 +61,12 @@ private[spark] object AkkaUtils {
    * Creates a Spray HTTP server bound to a given IP and port with a given Spray Route object to
    * handle requests. Returns the bound port or throws a SparkException on failure.
    */
-  def startSprayServer(actorSystem: ActorSystem, ip: String, port: Int, route: Route) {
+  def startSprayServer(actorSystem: ActorSystem, ip: String, port: Int, route: Route,
+      name: String = "HttpServer"): ActorRef = {
     val ioWorker    = IOExtension(actorSystem).ioBridge()
     val httpService = actorSystem.actorOf(Props(HttpServiceActor(route)))
     val server      = actorSystem.actorOf(
-      Props(new HttpServer(ioWorker, SingletonHandler(httpService), ServerSettings())), name = "HttpServer")
+      Props(new HttpServer(ioWorker, SingletonHandler(httpService), ServerSettings())), name = name)
     actorSystem.registerOnTermination { actorSystem.stop(ioWorker) }
     val timeout = 3.seconds
     val future  = server.ask(HttpServer.Bind(ip, port))(timeout)

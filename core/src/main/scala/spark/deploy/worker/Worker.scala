@@ -2,7 +2,8 @@ package spark.deploy.worker
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import akka.actor.{ActorRef, Props, Actor, ActorSystem, Terminated}
-import akka.util.duration._
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 import spark.{Logging, Utils}
 import spark.util.AkkaUtils
 import spark.deploy._
@@ -139,10 +140,10 @@ private[spark] class Worker(
 
     case Terminated(_) | RemoteClientDisconnected(_, _) | RemoteClientShutdown(_, _) =>
       masterDisconnected()
-      
+
     case RequestWorkerState => {
       sender ! WorkerState(ip, port, workerId, executors.values.toList,
-        finishedExecutors.values.toList, masterUrl, cores, memory, 
+        finishedExecutors.values.toList, masterUrl, cores, memory,
         coresUsed, memoryUsed, masterWebUiUrl)
     }
   }

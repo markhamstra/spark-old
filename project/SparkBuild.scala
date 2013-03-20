@@ -37,7 +37,7 @@ object SparkBuild extends Build {
     organization := "org.spark-project",
     version := "0.7.1-SNAPSHOT",
     scalaVersion := "2.10.1",
-    scalacOptions := Seq(/*"-deprecation",*/ "-unchecked", "-optimize"), // -deprecation is too noisy due to usage of old Hadoop API, enable it once that's no longer an issue
+    scalacOptions := Seq("-unchecked", "-optimize"), // -deprecation is too noisy due to usage of old Hadoop API, enable it once that's no longer an issue
     unmanagedJars in Compile <<= baseDirectory map { base => (base / "lib" ** "*.jar").classpath },
     retrieveManaged := true,
     retrievePattern := "[type]s/[artifact](-[revision])(-[classifier]).[ext]",
@@ -143,9 +143,9 @@ object SparkBuild extends Build {
         "io.spray"           %% "spray-json"       % "1.2.3",
         "colt"                % "colt"             % "1.2.0",
         "org.apache.mesos"    % "mesos"            % "0.9.0-incubating",
-        "org.scala-lang"      % "scala-actors"     % "2.10.0",
-        "org.scala-lang"      % "jline"            % "2.10.0",
-        "org.scala-lang"      % "scala-reflect"    % "2.10.0"
+        "org.scala-lang"      % "scala-actors"     % "2.10.1",
+        "org.scala-lang"      % "jline"            % "2.10.1",
+        "org.scala-lang"      % "scala-reflect"    % "2.10.1"
       ) ++ (if (HADOOP_MAJOR_VERSION == "2")
         Some("org.apache.hadoop" % "hadoop-client" % HADOOP_VERSION) else None).toSeq,
     unmanagedSourceDirectories in Compile <+= baseDirectory{ _ / ("src/hadoop" + HADOOP_MAJOR_VERSION + "/scala") }
@@ -158,7 +158,7 @@ object SparkBuild extends Build {
  def replSettings = sharedSettings ++ Seq(
     name := "spark-repl",
     // libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-compiler" % _)
-    libraryDependencies ++= Seq("org.scala-lang" % "scala-compiler" % "2.10.0")
+    libraryDependencies ++= Seq("org.scala-lang" % "scala-compiler" % "2.10.1")
   )
 
   def examplesSettings = sharedSettings ++ Seq(

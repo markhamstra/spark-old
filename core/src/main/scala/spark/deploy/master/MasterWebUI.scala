@@ -52,11 +52,11 @@ class MasterWebUI(master: ActorRef)(implicit val context: ActorContext) extends 
                 masterState.completedApps.find(_.id == appId).getOrElse(null)
               })
             }
-            respondWithMediaType(MediaTypes.`application/json`) { ctx =>
+            respondWithMediaType(`application/json`) { ctx =>
               ctx.complete(appInfo.mapTo[ApplicationInfo])
             }
           case (appId, _) =>
-            completeWith {
+            complete {
               val future = (master ? RequestMasterState).mapTo[MasterState]
               future.map { masterState =>
                 val app = masterState.activeApps.find(_.id == appId).getOrElse({

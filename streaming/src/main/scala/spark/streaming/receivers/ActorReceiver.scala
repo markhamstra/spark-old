@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger
 /** A helper with set of defaults for supervisor strategy **/
 object ReceiverSupervisorStrategy {
 
-  import akka.util.duration._
+  import scala.concurrent.duration._
   import akka.actor.SupervisorStrategy._
 
   val defaultStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange =
@@ -75,7 +75,7 @@ private[streaming] case class Data[T: ClassManifest](data: T)
  *
  * This starts a supervisor actor which starts workers and also provides
  * 	[http://doc.akka.io/docs/akka/2.0.5/scala/fault-tolerance.html fault-tolerance].
- * 
+ *
  *  Here's a way to start more supervisor/workers as its children.
  *
  * @example {{{

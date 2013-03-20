@@ -46,8 +46,8 @@ class WorkerWebUI(worker: ActorRef)(implicit val context: ActorContext) extends 
       } ~
       path("log") {
         parameters("appId", "executorId", "logType") { (appId, executorId, logType) =>
-          respondWithMediaType(cc.spray.http.MediaTypes.`text/plain`) {
-            getFromFileName("work/" + appId + "/" + executorId + "/" + logType)
+          respondWithMediaType(`text/plain`) {
+            getFromFile("work/" + appId + "/" + executorId + "/" + logType)
           }
         }
       } ~

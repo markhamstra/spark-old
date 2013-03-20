@@ -3,7 +3,8 @@ package spark.deploy.master
 import akka.actor._
 import akka.actor.Terminated
 import akka.remote.{RemoteClientLifeCycleEvent, RemoteClientDisconnected, RemoteClientShutdown}
-import akka.util.duration._
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -13,7 +14,6 @@ import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
 import spark.deploy._
 import spark.{Logging, SparkException, Utils}
 import spark.util.AkkaUtils
-
 
 private[spark] class Master(ip: String, port: Int, webUiPort: Int) extends Actor with Logging {
   val DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss")  // For application IDs

@@ -12,8 +12,8 @@ import java.nio.ByteBuffer
 
 import akka.actor.{Props, Actor}
 import akka.pattern.ask
-import akka.dispatch.Await
-import akka.util.duration._
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import spark.streaming.util.{RecurringTimer, SystemClock}
 import java.util.concurrent.ArrayBlockingQueue
 
