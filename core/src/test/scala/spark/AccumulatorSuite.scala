@@ -10,6 +10,20 @@ import spark.SparkContext._
 
 class AccumulatorSuite extends FunSuite with ShouldMatchers with LocalSparkContext {
 
+  implicit def setAccum[A] = new AccumulableParam[mutable.Set[A], A] {
+    def addInPlace(t1: mutable.Set[A], t2: mutable.Set[A]) : mutable.Set[A] = {
+      t1 ++= t2
+      t1
+    }
+    def addAccumulator(t1: mutable.Set[A], t2: A) : mutable.Set[A] = {
+      t1 += t2
+      t1
+    }
+    def zero(t: mutable.Set[A]) : mutable.Set[A] = {
+      new mutable.HashSet[A]()
+    }
+  }
+
   test ("basic accumulation"){
     sc = new SparkContext("local", "test")
     val acc : Accumulator[Int] = sc.accumulator(0)
