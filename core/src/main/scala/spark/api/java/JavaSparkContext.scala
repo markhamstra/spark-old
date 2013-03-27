@@ -109,21 +109,21 @@ class JavaSparkContext(val sc: SparkContext) extends JavaSparkContextVarargsWork
   def textFile(path: String, minSplits: Int): JavaRDD[String] = sc.textFile(path, minSplits)
 
   /**Get an RDD for a Hadoop SequenceFile with given key and value types. */
-  def sequenceFile[K, V](path: String,
+  def sequenceFile[K: ClassTag, V: ClassTag](path: String,
     keyClass: Class[K],
     valueClass: Class[V],
     minSplits: Int
     ): JavaPairRDD[K, V] = {
-    implicit val kcm = ClassTag.fromClass(keyClass)
-    implicit val vcm = ClassTag.fromClass(valueClass)
+    implicit val kcm = ClassTag(keyClass)
+    implicit val vcm = ClassTag(valueClass)
     new JavaPairRDD(sc.sequenceFile(path, keyClass, valueClass, minSplits))
   }
 
   /**Get an RDD for a Hadoop SequenceFile. */
-  def sequenceFile[K, V](path: String, keyClass: Class[K], valueClass: Class[V]):
+  def sequenceFile[K: ClassTag, V: ClassTag](path: String, keyClass: Class[K], valueClass: Class[V]):
   JavaPairRDD[K, V] = {
-    implicit val kcm = ClassTag.fromClass(keyClass)
-    implicit val vcm = ClassTag.fromClass(valueClass)
+    implicit val kcm = ClassTag(keyClass)
+    implicit val vcm = ClassTag(valueClass)
     new JavaPairRDD(sc.sequenceFile(path, keyClass, valueClass))
   }
 
@@ -158,15 +158,15 @@ class JavaSparkContext(val sc: SparkContext) extends JavaSparkContextVarargsWork
    * other necessary info (e.g. file name for a filesystem-based dataset, table name for HyperTable,
    * etc).
    */
-  def hadoopRDD[K, V, F <: InputFormat[K, V]](
+  def hadoopRDD[K: ClassTag, V: ClassTag, F <: InputFormat[K, V]](
     conf: JobConf,
     inputFormatClass: Class[F],
     keyClass: Class[K],
     valueClass: Class[V],
     minSplits: Int
     ): JavaPairRDD[K, V] = {
-    implicit val kcm = ClassTag.fromClass(keyClass)
-    implicit val vcm = ClassTag.fromClass(valueClass)
+    implicit val kcm = ClassTag(keyClass)
+    implicit val vcm = ClassTag(valueClass)
     new JavaPairRDD(sc.hadoopRDD(conf, inputFormatClass, keyClass, valueClass, minSplits))
   }
 
@@ -175,39 +175,39 @@ class JavaSparkContext(val sc: SparkContext) extends JavaSparkContextVarargsWork
    * other necessary info (e.g. file name for a filesystem-based dataset, table name for HyperTable,
    * etc).
    */
-  def hadoopRDD[K, V, F <: InputFormat[K, V]](
+  def hadoopRDD[K: ClassTag, V: ClassTag, F <: InputFormat[K, V]](
     conf: JobConf,
     inputFormatClass: Class[F],
     keyClass: Class[K],
     valueClass: Class[V]
     ): JavaPairRDD[K, V] = {
-    implicit val kcm = ClassTag.fromClass(keyClass)
-    implicit val vcm = ClassTag.fromClass(valueClass)
+    implicit val kcm = ClassTag(keyClass)
+    implicit val vcm = ClassTag(valueClass)
     new JavaPairRDD(sc.hadoopRDD(conf, inputFormatClass, keyClass, valueClass))
   }
 
   /** Get an RDD for a Hadoop file with an arbitrary InputFormat */
-  def hadoopFile[K, V, F <: InputFormat[K, V]](
+  def hadoopFile[K: ClassTag, V: ClassTag, F <: InputFormat[K, V]](
     path: String,
     inputFormatClass: Class[F],
     keyClass: Class[K],
     valueClass: Class[V],
     minSplits: Int
     ): JavaPairRDD[K, V] = {
-    implicit val kcm = ClassTag.fromClass(keyClass)
-    implicit val vcm = ClassTag.fromClass(valueClass)
+    implicit val kcm = ClassTag(keyClass)
+    implicit val vcm = ClassTag(valueClass)
     new JavaPairRDD(sc.hadoopFile(path, inputFormatClass, keyClass, valueClass, minSplits))
   }
 
   /** Get an RDD for a Hadoop file with an arbitrary InputFormat */
-  def hadoopFile[K, V, F <: InputFormat[K, V]](
+  def hadoopFile[K: ClassTag, V: ClassTag, F <: InputFormat[K, V]](
     path: String,
     inputFormatClass: Class[F],
     keyClass: Class[K],
     valueClass: Class[V]
     ): JavaPairRDD[K, V] = {
-    implicit val kcm = ClassTag.fromClass(keyClass)
-    implicit val vcm = ClassTag.fromClass(valueClass)
+    implicit val kcm = ClassTag(keyClass)
+    implicit val vcm = ClassTag(valueClass)
     new JavaPairRDD(sc.hadoopFile(path,
       inputFormatClass, keyClass, valueClass))
   }
@@ -216,14 +216,14 @@ class JavaSparkContext(val sc: SparkContext) extends JavaSparkContextVarargsWork
    * Get an RDD for a given Hadoop file with an arbitrary new API InputFormat
    * and extra configuration options to pass to the input format.
    */
-  def newAPIHadoopFile[K, V, F <: NewInputFormat[K, V]](
+  def newAPIHadoopFile[K: ClassTag, V: ClassTag, F <: NewInputFormat[K, V]](
     path: String,
     fClass: Class[F],
     kClass: Class[K],
     vClass: Class[V],
     conf: Configuration): JavaPairRDD[K, V] = {
-    implicit val kcm = ClassTag.fromClass(kClass)
-    implicit val vcm = ClassTag.fromClass(vClass)
+    implicit val kcm = ClassTag(kClass)
+    implicit val vcm = ClassTag(vClass)
     new JavaPairRDD(sc.newAPIHadoopFile(path, fClass, kClass, vClass, conf))
   }
 
@@ -231,13 +231,13 @@ class JavaSparkContext(val sc: SparkContext) extends JavaSparkContextVarargsWork
    * Get an RDD for a given Hadoop file with an arbitrary new API InputFormat
    * and extra configuration options to pass to the input format.
    */
-  def newAPIHadoopRDD[K, V, F <: NewInputFormat[K, V]](
+  def newAPIHadoopRDD[K: ClassTag, V: ClassTag, F <: NewInputFormat[K, V]](
     conf: Configuration,
     fClass: Class[F],
     kClass: Class[K],
     vClass: Class[V]): JavaPairRDD[K, V] = {
-    implicit val kcm = ClassTag.fromClass(kClass)
-    implicit val vcm = ClassTag.fromClass(vClass)
+    implicit val kcm = ClassTag(kClass)
+    implicit val vcm = ClassTag(vClass)
     new JavaPairRDD(sc.newAPIHadoopRDD(conf, fClass, kClass, vClass))
   }
 
