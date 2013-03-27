@@ -2,7 +2,6 @@ package spark.rdd
 
 import java.io.{ObjectOutputStream, IOException}
 import spark._
-import scala.reflect.ClassTag
 
 
 private[spark]
@@ -27,7 +26,7 @@ class CartesianPartition(
 }
 
 private[spark]
-class CartesianRDD[T: ClassTag, U:ClassTag](
+class CartesianRDD[T: ClassManifest, U:ClassManifest](
     sc: SparkContext,
     var rdd1 : RDD[T],
     var rdd2 : RDD[U])

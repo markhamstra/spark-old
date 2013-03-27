@@ -2,10 +2,9 @@ package spark.streaming.dstream
 
 import spark.streaming.{Duration, DStream, Time}
 import spark.RDD
-import scala.reflect.ClassTag
 
 private[streaming]
-class FilteredDStream[T: ClassTag](
+class FilteredDStream[T: ClassManifest](
     parent: DStream[T],
     filterFunc: T => Boolean
   ) extends DStream[T](parent.ssc) {

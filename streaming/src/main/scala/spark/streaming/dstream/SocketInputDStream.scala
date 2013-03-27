@@ -7,10 +7,8 @@ import spark.util.NextIterator
 import java.io._
 import java.net.Socket
 
-import scala.reflect.ClassTag
-
 private[streaming]
-class SocketInputDStream[T: ClassTag](
+class SocketInputDStream[T: ClassManifest](
     @transient ssc_ : StreamingContext,
     host: String,
     port: Int,
@@ -24,7 +22,7 @@ class SocketInputDStream[T: ClassTag](
 }
 
 private[streaming]
-class SocketReceiver[T: ClassTag](
+class SocketReceiver[T: ClassManifest](
     host: String,
     port: Int,
     bytesToObjects: InputStream => Iterator[T],

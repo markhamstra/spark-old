@@ -2,7 +2,6 @@ package spark.streaming.examples
 
 import scala.collection.mutable.LinkedList
 import scala.util.Random
-import scala.reflect.ClassTag
 
 import akka.actor.Actor
 import akka.actor.ActorRef
@@ -66,7 +65,7 @@ class FeederActor extends Actor {
  *
  * @see [[spark.streaming.examples.FeederActor]]
  */
-class SampleActorReceiver[T: ClassTag](urlOfPublisher: String)
+class SampleActorReceiver[T: ClassManifest](urlOfPublisher: String)
 extends Actor with Receiver {
 
   lazy private val remotePublisher = context.actorFor(urlOfPublisher)

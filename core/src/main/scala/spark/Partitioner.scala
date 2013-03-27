@@ -1,7 +1,5 @@
 package spark
 
-import scala.reflect.ClassTag
-
 /**
  * An object that defines how the elements in a key-value pair RDD are partitioned by key.
  * Maps each key to a partition ID, from 0 to `numPartitions - 1`.
@@ -62,7 +60,7 @@ class HashPartitioner(partitions: Int) extends Partitioner {
       }
     }
   }
-
+  
   override def equals(other: Any): Boolean = other match {
     case h: HashPartitioner =>
       h.numPartitions == numPartitions
@@ -75,10 +73,10 @@ class HashPartitioner(partitions: Int) extends Partitioner {
  * A [[spark.Partitioner]] that partitions sortable records by range into roughly equal ranges.
  * Determines the ranges by sampling the RDD passed in.
  */
-class RangePartitioner[K <% Ordered[K]: ClassTag, V](
+class RangePartitioner[K <% Ordered[K]: ClassManifest, V](
     partitions: Int,
     @transient rdd: RDD[(K,V)],
-    private val ascending: Boolean = true)
+    private val ascending: Boolean = true) 
   extends Partitioner {
 
   // An array of upper bounds for the first (partitions - 1) partitions

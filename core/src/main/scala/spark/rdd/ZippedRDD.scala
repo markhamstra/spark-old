@@ -2,10 +2,9 @@ package spark.rdd
 
 import spark.{OneToOneDependency, RDD, SparkContext, Partition, TaskContext}
 import java.io.{ObjectOutputStream, IOException}
-import scala.reflect.ClassTag
 
 
-private[spark] class ZippedPartition[T: ClassTag, U: ClassTag](
+private[spark] class ZippedPartition[T: ClassManifest, U: ClassManifest](
     idx: Int,
     @transient rdd1: RDD[T],
     @transient rdd2: RDD[U]
@@ -26,7 +25,7 @@ private[spark] class ZippedPartition[T: ClassTag, U: ClassTag](
   }
 }
 
-class ZippedRDD[T: ClassTag, U: ClassTag](
+class ZippedRDD[T: ClassManifest, U: ClassManifest](
     sc: SparkContext,
     var rdd1: RDD[T],
     var rdd2: RDD[U])

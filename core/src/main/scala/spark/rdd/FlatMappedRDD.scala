@@ -1,11 +1,10 @@
 package spark.rdd
 
 import spark.{RDD, Partition, TaskContext}
-import scala.reflect.ClassTag
 
 
 private[spark]
-class FlatMappedRDD[U: ClassTag, T: ClassTag](
+class FlatMappedRDD[U: ClassManifest, T: ClassManifest](
     prev: RDD[T],
     f: T => TraversableOnce[U])
   extends RDD[U](prev) {

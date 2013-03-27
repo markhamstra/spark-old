@@ -4,7 +4,6 @@ import java.util.{Map => JMap}
 
 import scala.collection.JavaConversions
 import scala.collection.JavaConversions._
-import scala.reflect.ClassTag
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.mapred.InputFormat
@@ -64,8 +63,8 @@ class JavaSparkContext(val sc: SparkContext) extends JavaSparkContextVarargsWork
 
   /** Distribute a local Scala collection to form an RDD. */
   def parallelize[T](list: java.util.List[T], numSlices: Int): JavaRDD[T] = {
-    implicit val cm: ClassTag[T] =
-      implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[T]]
+    implicit val cm: ClassManifest[T] =
+      implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[T]]
     sc.parallelize(JavaConversions.asScalaBuffer(list), numSlices)
   }
 
@@ -76,10 +75,10 @@ class JavaSparkContext(val sc: SparkContext) extends JavaSparkContextVarargsWork
   /** Distribute a local Scala collection to form an RDD. */
   def parallelizePairs[K, V](list: java.util.List[Tuple2[K, V]], numSlices: Int)
   : JavaPairRDD[K, V] = {
-    implicit val kcm: ClassTag[K] =
-      implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[K]]
-    implicit val vcm: ClassTag[V] =
-      implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[V]]
+    implicit val kcm: ClassManifest[K] =
+      implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[K]]
+    implicit val vcm: ClassManifest[V] =
+      implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[V]]
     JavaPairRDD.fromRDD(sc.parallelize(JavaConversions.asScalaBuffer(list), numSlices))
   }
 
@@ -114,16 +113,16 @@ class JavaSparkContext(val sc: SparkContext) extends JavaSparkContextVarargsWork
     valueClass: Class[V],
     minSplits: Int
     ): JavaPairRDD[K, V] = {
-    implicit val kcm = ClassTag.fromClass(keyClass)
-    implicit val vcm = ClassTag.fromClass(valueClass)
+    implicit val kcm = ClassManifest.fromClass(keyClass)
+    implicit val vcm = ClassManifest.fromClass(valueClass)
     new JavaPairRDD(sc.sequenceFile(path, keyClass, valueClass, minSplits))
   }
 
   /**Get an RDD for a Hadoop SequenceFile. */
   def sequenceFile[K, V](path: String, keyClass: Class[K], valueClass: Class[V]):
   JavaPairRDD[K, V] = {
-    implicit val kcm = ClassTag.fromClass(keyClass)
-    implicit val vcm = ClassTag.fromClass(valueClass)
+    implicit val kcm = ClassManifest.fromClass(keyClass)
+    implicit val vcm = ClassManifest.fromClass(valueClass)
     new JavaPairRDD(sc.sequenceFile(path, keyClass, valueClass))
   }
 
@@ -135,8 +134,8 @@ class JavaSparkContext(val sc: SparkContext) extends JavaSparkContextVarargsWork
    * that there's very little effort required to save arbitrary objects.
    */
   def objectFile[T](path: String, minSplits: Int): JavaRDD[T] = {
-    implicit val cm: ClassTag[T] =
-      implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[T]]
+    implicit val cm: ClassManifest[T] =
+      implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[T]]
     sc.objectFile(path, minSplits)(cm)
   }
 
@@ -148,8 +147,8 @@ class JavaSparkContext(val sc: SparkContext) extends JavaSparkContextVarargsWork
    * that there's very little effort required to save arbitrary objects.
    */
   def objectFile[T](path: String): JavaRDD[T] = {
-    implicit val cm: ClassTag[T] =
-      implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[T]]
+    implicit val cm: ClassManifest[T] =
+      implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[T]]
     sc.objectFile(path)(cm)
   }
 
@@ -165,8 +164,8 @@ class JavaSparkContext(val sc: SparkContext) extends JavaSparkContextVarargsWork
     valueClass: Class[V],
     minSplits: Int
     ): JavaPairRDD[K, V] = {
-    implicit val kcm = ClassTag.fromClass(keyClass)
-    implicit val vcm = ClassTag.fromClass(valueClass)
+    implicit val kcm = ClassManifest.fromClass(keyClass)
+    implicit val vcm = ClassManifest.fromClass(valueClass)
     new JavaPairRDD(sc.hadoopRDD(conf, inputFormatClass, keyClass, valueClass, minSplits))
   }
 
@@ -181,8 +180,8 @@ class JavaSparkContext(val sc: SparkContext) extends JavaSparkContextVarargsWork
     keyClass: Class[K],
     valueClass: Class[V]
     ): JavaPairRDD[K, V] = {
-    implicit val kcm = ClassTag.fromClass(keyClass)
-    implicit val vcm = ClassTag.fromClass(valueClass)
+    implicit val kcm = ClassManifest.fromClass(keyClass)
+    implicit val vcm = ClassManifest.fromClass(valueClass)
     new JavaPairRDD(sc.hadoopRDD(conf, inputFormatClass, keyClass, valueClass))
   }
 
@@ -194,8 +193,8 @@ class JavaSparkContext(val sc: SparkContext) extends JavaSparkContextVarargsWork
     valueClass: Class[V],
     minSplits: Int
     ): JavaPairRDD[K, V] = {
-    implicit val kcm = ClassTag.fromClass(keyClass)
-    implicit val vcm = ClassTag.fromClass(valueClass)
+    implicit val kcm = ClassManifest.fromClass(keyClass)
+    implicit val vcm = ClassManifest.fromClass(valueClass)
     new JavaPairRDD(sc.hadoopFile(path, inputFormatClass, keyClass, valueClass, minSplits))
   }
 
@@ -206,8 +205,8 @@ class JavaSparkContext(val sc: SparkContext) extends JavaSparkContextVarargsWork
     keyClass: Class[K],
     valueClass: Class[V]
     ): JavaPairRDD[K, V] = {
-    implicit val kcm = ClassTag.fromClass(keyClass)
-    implicit val vcm = ClassTag.fromClass(valueClass)
+    implicit val kcm = ClassManifest.fromClass(keyClass)
+    implicit val vcm = ClassManifest.fromClass(valueClass)
     new JavaPairRDD(sc.hadoopFile(path,
       inputFormatClass, keyClass, valueClass))
   }
@@ -222,8 +221,8 @@ class JavaSparkContext(val sc: SparkContext) extends JavaSparkContextVarargsWork
     kClass: Class[K],
     vClass: Class[V],
     conf: Configuration): JavaPairRDD[K, V] = {
-    implicit val kcm = ClassTag.fromClass(kClass)
-    implicit val vcm = ClassTag.fromClass(vClass)
+    implicit val kcm = ClassManifest.fromClass(kClass)
+    implicit val vcm = ClassManifest.fromClass(vClass)
     new JavaPairRDD(sc.newAPIHadoopFile(path, fClass, kClass, vClass, conf))
   }
 
@@ -236,15 +235,15 @@ class JavaSparkContext(val sc: SparkContext) extends JavaSparkContextVarargsWork
     fClass: Class[F],
     kClass: Class[K],
     vClass: Class[V]): JavaPairRDD[K, V] = {
-    implicit val kcm = ClassTag.fromClass(kClass)
-    implicit val vcm = ClassTag.fromClass(vClass)
+    implicit val kcm = ClassManifest.fromClass(kClass)
+    implicit val vcm = ClassManifest.fromClass(vClass)
     new JavaPairRDD(sc.newAPIHadoopRDD(conf, fClass, kClass, vClass))
   }
 
   /** Build the union of two or more RDDs. */
   override def union[T](first: JavaRDD[T], rest: java.util.List[JavaRDD[T]]): JavaRDD[T] = {
     val rdds: Seq[RDD[T]] = (Seq(first) ++ asScalaBuffer(rest)).map(_.rdd)
-    implicit val cm: ClassTag[T] = first.classManifest
+    implicit val cm: ClassManifest[T] = first.classManifest
     sc.union(rdds)(cm)
   }
 
@@ -252,9 +251,9 @@ class JavaSparkContext(val sc: SparkContext) extends JavaSparkContextVarargsWork
   override def union[K, V](first: JavaPairRDD[K, V], rest: java.util.List[JavaPairRDD[K, V]])
       : JavaPairRDD[K, V] = {
     val rdds: Seq[RDD[(K, V)]] = (Seq(first) ++ asScalaBuffer(rest)).map(_.rdd)
-    implicit val cm: ClassTag[(K, V)] = first.classManifest
-    implicit val kcm: ClassTag[K] = first.kManifest
-    implicit val vcm: ClassTag[V] = first.vManifest
+    implicit val cm: ClassManifest[(K, V)] = first.classManifest
+    implicit val kcm: ClassManifest[K] = first.kManifest
+    implicit val vcm: ClassManifest[V] = first.vManifest
     new JavaPairRDD(sc.union(rdds)(cm))(kcm, vcm)
   }
 
@@ -387,8 +386,8 @@ class JavaSparkContext(val sc: SparkContext) extends JavaSparkContextVarargsWork
   }
 
   protected def checkpointFile[T](path: String): JavaRDD[T] = {
-    implicit val cm: ClassTag[T] =
-      implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[T]]
+    implicit val cm: ClassManifest[T] =
+      implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[T]]
     new JavaRDD(sc.checkpointFile(path))
   }
 }

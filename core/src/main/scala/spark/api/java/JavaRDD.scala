@@ -3,9 +3,8 @@ package spark.api.java
 import spark._
 import spark.api.java.function.{Function => JFunction}
 import spark.storage.StorageLevel
-import scala.reflect.ClassTag
 
-class JavaRDD[T](val rdd: RDD[T])(implicit val classManifest: ClassTag[T]) extends
+class JavaRDD[T](val rdd: RDD[T])(implicit val classManifest: ClassManifest[T]) extends
 JavaRDDLike[T, JavaRDD[T]] {
 
   override def wrapRDD(rdd: RDD[T]): JavaRDD[T] = JavaRDD.fromRDD(rdd)
@@ -15,7 +14,7 @@ JavaRDDLike[T, JavaRDD[T]] {
   /** Persist this RDD with the default storage level (`MEMORY_ONLY`). */
   def cache(): JavaRDD[T] = wrapRDD(rdd.cache())
 
-  /**
+  /** 
    * Set this RDD's storage level to persist its values across operations after the first time
    * it is computed. Can only be called once on each RDD.
    */
@@ -32,7 +31,7 @@ JavaRDDLike[T, JavaRDD[T]] {
    * Return a new RDD containing the distinct elements in this RDD.
    */
   def distinct(numPartitions: Int): JavaRDD[T] = wrapRDD(rdd.distinct(numPartitions))
-
+  
   /**
    * Return a new RDD containing only the elements that satisfy a predicate.
    */
@@ -49,7 +48,7 @@ JavaRDDLike[T, JavaRDD[T]] {
    */
   def sample(withReplacement: Boolean, fraction: Double, seed: Int): JavaRDD[T] =
     wrapRDD(rdd.sample(withReplacement, fraction, seed))
-
+    
   /**
    * Return the union of this RDD and another one. Any identical elements will appear multiple
    * times (use `.distinct()` to eliminate them).
@@ -58,7 +57,7 @@ JavaRDDLike[T, JavaRDD[T]] {
 
   /**
    * Return an RDD with the elements from `this` that are not in `other`.
-   *
+   * 
    * Uses `this` partitioner/partition size, because even if `other` is huge, the resulting
    * RDD will be <= us.
    */
@@ -80,7 +79,7 @@ JavaRDDLike[T, JavaRDD[T]] {
 
 object JavaRDD {
 
-  implicit def fromRDD[T: ClassTag](rdd: RDD[T]): JavaRDD[T] = new JavaRDD[T](rdd)
+  implicit def fromRDD[T: ClassManifest](rdd: RDD[T]): JavaRDD[T] = new JavaRDD[T](rdd)
 
   implicit def toRDD[T](rdd: JavaRDD[T]): RDD[T] = rdd.rdd
 }

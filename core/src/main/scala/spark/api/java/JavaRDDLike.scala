@@ -3,7 +3,6 @@ package spark.api.java
 import java.util.{List => JList}
 import scala.Tuple2
 import scala.collection.JavaConversions._
-import scala.reflect.ClassTag
 
 import spark.{SparkContext, Partition, RDD, TaskContext}
 import spark.api.java.JavaPairRDD._
@@ -16,7 +15,7 @@ import com.google.common.base.Optional
 trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends Serializable {
   def wrapRDD(rdd: RDD[T]): This
 
-  implicit val classManifest: ClassTag[T]
+  implicit val classManifest: ClassManifest[T]
 
   def rdd: RDD[T]
 
@@ -58,7 +57,7 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends Serializable {
    * Return a new RDD by applying a function to all elements of this RDD.
    */
   def map[K2, V2](f: PairFunction[T, K2, V2]): JavaPairRDD[K2, V2] = {
-    def cm = implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[Tuple2[K2, V2]]]
+    def cm = implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[Tuple2[K2, V2]]]
     new JavaPairRDD(rdd.map(f)(cm))(f.keyType(), f.valueType())
   }
 
@@ -89,7 +88,7 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends Serializable {
   def flatMap[K2, V2](f: PairFlatMapFunction[T, K2, V2]): JavaPairRDD[K2, V2] = {
     import scala.collection.JavaConverters._
     def fn = (x: T) => f.apply(x).asScala
-    def cm = implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[Tuple2[K2, V2]]]
+    def cm = implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[Tuple2[K2, V2]]]
     JavaPairRDD.fromRDD(rdd.flatMap(fn)(cm))(f.keyType(), f.valueType())
   }
 
@@ -137,10 +136,10 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends Serializable {
    * mapping to that key.
    */
   def groupBy[K](f: JFunction[T, K]): JavaPairRDD[K, JList[T]] = {
-    implicit val kcm: ClassTag[K] =
-      implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[K]]
-    implicit val vcm: ClassTag[JList[T]] =
-      implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[JList[T]]]
+    implicit val kcm: ClassManifest[K] =
+      implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[K]]
+    implicit val vcm: ClassManifest[JList[T]] =
+      implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[JList[T]]]
     JavaPairRDD.fromRDD(groupByResultToJava(rdd.groupBy(f)(f.returnType)))(kcm, vcm)
   }
 
@@ -149,10 +148,10 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends Serializable {
    * mapping to that key.
    */
   def groupBy[K](f: JFunction[T, K], numPartitions: Int): JavaPairRDD[K, JList[T]] = {
-    implicit val kcm: ClassTag[K] =
-      implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[K]]
-    implicit val vcm: ClassTag[JList[T]] =
-      implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[JList[T]]]
+    implicit val kcm: ClassManifest[K] =
+      implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[K]]
+    implicit val vcm: ClassManifest[JList[T]] =
+      implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[JList[T]]]
     JavaPairRDD.fromRDD(groupByResultToJava(rdd.groupBy(f, numPartitions)(f.returnType)))(kcm, vcm)
   }
 
@@ -305,7 +304,7 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends Serializable {
    * Creates tuples of the elements in this RDD by applying `f`.
    */
   def keyBy[K](f: JFunction[T, K]): JavaPairRDD[K, T] = {
-    implicit val kcm: ClassTag[K] = implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[K]]
+    implicit val kcm: ClassManifest[K] = implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[K]]
     JavaPairRDD.fromRDD(rdd.keyBy(f))
   }
 

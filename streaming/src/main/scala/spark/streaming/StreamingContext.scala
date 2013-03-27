@@ -16,7 +16,6 @@ import spark.streaming.receivers.ActorReceiver
 
 import scala.collection.mutable.Queue
 import scala.collection.Map
-import scala.reflect.ClassTag
 
 import java.io.InputStream
 import java.util.concurrent.atomic.AtomicInteger
@@ -167,7 +166,7 @@ class StreamingContext private (
    * Create an input stream with any arbitrary user implemented network receiver.
    * @param receiver Custom implementation of NetworkReceiver
    */
-  def networkStream[T: ClassTag](
+  def networkStream[T: ClassManifest](
     receiver: NetworkReceiver[T]): DStream[T] = {
     val inputStream = new PluggableInputDStream[T](this,
       receiver)
@@ -186,7 +185,7 @@ class StreamingContext private (
    *       to ensure the type safety, i.e parametrized type of data received and actorStream
    *       should be same.
    */
-  def actorStream[T: ClassTag](
+  def actorStream[T: ClassManifest](
     props: Props,
     name: String,
     storageLevel: StorageLevel = StorageLevel.MEMORY_ONLY_SER_2,
@@ -204,7 +203,7 @@ class StreamingContext private (
    *                       and sub sequence refer to its payload.
    * @param storageLevel RDD storage level. Defaults to memory-only.
    */
-  def zeroMQStream[T: ClassTag](
+  def zeroMQStream[T: ClassManifest](
       publisherUrl:String,
       subscribe: Subscribe,
       bytesToObjects: Seq[Seq[Byte]] ⇒ Iterator[T],
@@ -226,7 +225,7 @@ class StreamingContext private (
    * @param storageLevel  Storage level to use for storing the received objects
    *                      (default: StorageLevel.MEMORY_AND_DISK_SER_2)
    */
-  def kafkaStream[T: ClassTag](
+  def kafkaStream[T: ClassManifest](
       zkQuorum: String,
       groupId: String,
       topics: Map[String, Int],
@@ -265,7 +264,7 @@ class StreamingContext private (
    * @param storageLevel  Storage level to use for storing the received objects
    * @tparam T            Type of the objects received (after converting bytes to objects)
    */
-  def socketStream[T: ClassTag](
+  def socketStream[T: ClassManifest](
       hostname: String,
       port: Int,
       converter: (InputStream) => Iterator[T],
@@ -302,7 +301,7 @@ class StreamingContext private (
    * @param storageLevel  Storage level to use for storing the received objects
    * @tparam T            Type of the objects in the received blocks
    */
-  def rawSocketStream[T: ClassTag](
+  def rawSocketStream[T: ClassManifest](
       hostname: String,
       port: Int,
       storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK_SER_2
@@ -322,9 +321,9 @@ class StreamingContext private (
    * @tparam F Input format for reading HDFS file
    */
   def fileStream[
-    K: ClassTag,
-    V: ClassTag,
-    F <: NewInputFormat[K, V]: ClassTag
+    K: ClassManifest,
+    V: ClassManifest,
+    F <: NewInputFormat[K, V]: ClassManifest
   ] (directory: String): DStream[(K, V)] = {
     val inputStream = new FileInputDStream[K, V, F](this, directory)
     registerInputStream(inputStream)
@@ -342,9 +341,9 @@ class StreamingContext private (
    * @tparam F Input format for reading HDFS file
    */
   def fileStream[
-    K: ClassTag,
-    V: ClassTag,
-    F <: NewInputFormat[K, V]: ClassTag
+    K: ClassManifest,
+    V: ClassManifest,
+    F <: NewInputFormat[K, V]: ClassManifest
   ] (directory: String, filter: Path => Boolean, newFilesOnly: Boolean): DStream[(K, V)] = {
     val inputStream = new FileInputDStream[K, V, F](this, directory, filter, newFilesOnly)
     registerInputStream(inputStream)
@@ -386,7 +385,7 @@ class StreamingContext private (
    * @param oneAtATime Whether only one RDD should be consumed from the queue in every interval
    * @tparam T         Type of objects in the RDD
    */
-  def queueStream[T: ClassTag](
+  def queueStream[T: ClassManifest](
       queue: Queue[RDD[T]],
       oneAtATime: Boolean = true
     ): DStream[T] = {
@@ -401,7 +400,7 @@ class StreamingContext private (
    * @param defaultRDD Default RDD is returned by the DStream when the queue is empty. Set as null if no RDD should be returned when empty
    * @tparam T         Type of objects in the RDD
    */
-  def queueStream[T: ClassTag](
+  def queueStream[T: ClassManifest](
       queue: Queue[RDD[T]],
       oneAtATime: Boolean,
       defaultRDD: RDD[T]
@@ -414,7 +413,7 @@ class StreamingContext private (
   /**
    * Create a unified DStream from multiple DStreams of the same type and same interval
    */
-  def union[T: ClassTag](streams: Seq[DStream[T]]): DStream[T] = {
+  def union[T: ClassManifest](streams: Seq[DStream[T]]): DStream[T] = {
     new UnionDStream[T](streams.toArray)
   }
 
@@ -491,7 +490,7 @@ class StreamingContext private (
 
 object StreamingContext {
 
-  implicit def toPairDStreamFunctions[K: ClassTag, V: ClassTag](stream: DStream[(K,V)]) = {
+  implicit def toPairDStreamFunctions[K: ClassManifest, V: ClassManifest](stream: DStream[(K,V)]) = {
     new PairDStreamFunctions[K, V](stream)
   }
 

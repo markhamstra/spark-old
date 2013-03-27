@@ -11,7 +11,6 @@ import java.util.Date
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Map
 import scala.collection.mutable.HashMap
-import scala.reflect.ClassTag
 
 import org.apache.hadoop.mapred.JobConf
 import org.apache.hadoop.mapred.OutputFormat
@@ -33,14 +32,14 @@ import spark.SparkContext._
  *
  * Users should import `spark.SparkContext._` at the top of their program to use these functions.
  */
-class SequenceFileRDDFunctions[K <% Writable: ClassTag, V <% Writable : ClassTag](
+class SequenceFileRDDFunctions[K <% Writable: ClassManifest, V <% Writable : ClassManifest](
     self: RDD[(K, V)])
   extends Logging
   with Serializable {
-
-  private def getWritableClass[T <% Writable: ClassTag](): Class[_ <: Writable] = {
+  
+  private def getWritableClass[T <% Writable: ClassManifest](): Class[_ <: Writable] = {
     val c = {
-      if (classOf[Writable].isAssignableFrom(classManifest[T].erasure)) {
+      if (classOf[Writable].isAssignableFrom(classManifest[T].erasure)) { 
         classManifest[T].erasure
       } else {
         // We get the type of the Writable class by looking at the apply method which converts
@@ -70,17 +69,17 @@ class SequenceFileRDDFunctions[K <% Writable: ClassTag, V <% Writable : ClassTag
     val valueClass = getWritableClass[V]
     val convertKey = !classOf[Writable].isAssignableFrom(self.getKeyClass)
     val convertValue = !classOf[Writable].isAssignableFrom(self.getValueClass)
-
-    logInfo("Saving as sequence file of type (" + keyClass.getSimpleName + "," + valueClass.getSimpleName + ")" )
+  
+    logInfo("Saving as sequence file of type (" + keyClass.getSimpleName + "," + valueClass.getSimpleName + ")" ) 
     val format = classOf[SequenceFileOutputFormat[Writable, Writable]]
     if (!convertKey && !convertValue) {
-      self.saveAsHadoopFile(path, keyClass, valueClass, format)
+      self.saveAsHadoopFile(path, keyClass, valueClass, format) 
     } else if (!convertKey && convertValue) {
-      self.map(x => (x._1,anyToWritable(x._2))).saveAsHadoopFile(path, keyClass, valueClass, format)
+      self.map(x => (x._1,anyToWritable(x._2))).saveAsHadoopFile(path, keyClass, valueClass, format) 
     } else if (convertKey && !convertValue) {
-      self.map(x => (anyToWritable(x._1),x._2)).saveAsHadoopFile(path, keyClass, valueClass, format)
+      self.map(x => (anyToWritable(x._1),x._2)).saveAsHadoopFile(path, keyClass, valueClass, format) 
     } else if (convertKey && convertValue) {
-      self.map(x => (anyToWritable(x._1),anyToWritable(x._2))).saveAsHadoopFile(path, keyClass, valueClass, format)
-    }
+      self.map(x => (anyToWritable(x._1),anyToWritable(x._2))).saveAsHadoopFile(path, keyClass, valueClass, format) 
+    } 
   }
 }

@@ -6,7 +6,6 @@ import akka.actor.{ PossiblyHarmful, OneForOneStrategy }
 
 import spark.storage.StorageLevel
 import spark.streaming.dstream.NetworkReceiver
-import scala.reflect.ClassTag
 
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -45,11 +44,11 @@ object ReceiverSupervisorStrategy {
  *
  */
 trait Receiver { self: Actor ⇒
-  def pushBlock[T: ClassTag](iter: Iterator[T]) {
+  def pushBlock[T: ClassManifest](iter: Iterator[T]) {
     context.parent ! Data(iter)
   }
 
-  def pushBlock[T: ClassTag](data: T) {
+  def pushBlock[T: ClassManifest](data: T) {
     context.parent ! Data(data)
   }
 
@@ -64,7 +63,7 @@ case class Statistics(numberOfMsgs: Int,
   otherInfo: String)
 
 /** Case class to receive data sent by child actors **/
-private[streaming] case class Data[T: ClassTag](data: T)
+private[streaming] case class Data[T: ClassManifest](data: T)
 
 /**
  * Provides Actors as receivers for receiving stream.
@@ -87,7 +86,7 @@ private[streaming] case class Data[T: ClassTag](data: T)
  *
  *
  */
-private[streaming] class ActorReceiver[T: ClassTag](
+private[streaming] class ActorReceiver[T: ClassManifest](
   props: Props,
   name: String,
   storageLevel: StorageLevel,

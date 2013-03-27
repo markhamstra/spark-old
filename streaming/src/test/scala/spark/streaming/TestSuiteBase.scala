@@ -12,14 +12,12 @@ import java.io.{ObjectInputStream, IOException}
 
 import org.scalatest.{BeforeAndAfter, FunSuite}
 
-import scala.reflect.ClassTag
-
 /**
  * This is a input stream just for the testsuites. This is equivalent to a checkpointable,
  * replayable, reliable message queue like Kafka. It requires a sequence as input, and
  * returns the i_th element at the i_th batch unde manual clock.
  */
-class TestInputStream[T: ClassTag](ssc_ : StreamingContext, input: Seq[Seq[T]], numPartitions: Int)
+class TestInputStream[T: ClassManifest](ssc_ : StreamingContext, input: Seq[Seq[T]], numPartitions: Int)
   extends InputDStream[T](ssc_) {
 
   def start() {}
@@ -45,7 +43,7 @@ class TestInputStream[T: ClassTag](ssc_ : StreamingContext, input: Seq[Seq[T]], 
  * This is a output stream just for the testsuites. All the output is collected into a
  * ArrayBuffer. This buffer is wiped clean on being restored from checkpoint.
  */
-class TestOutputStream[T: ClassTag](parent: DStream[T], val output: ArrayBuffer[Seq[T]])
+class TestOutputStream[T: ClassManifest](parent: DStream[T], val output: ArrayBuffer[Seq[T]])
   extends ForEachDStream[T](parent, (rdd: RDD[T], t: Time) => {
     val collected = rdd.collect()
     output += collected
@@ -90,7 +88,7 @@ trait TestSuiteBase extends FunSuite with BeforeAndAfter with Logging {
    * Set up required DStreams to test the DStream operation using the two sequences
    * of input collections.
    */
-  def setupStreams[U: ClassTag, V: ClassTag](
+  def setupStreams[U: ClassManifest, V: ClassManifest](
       input: Seq[Seq[U]],
       operation: DStream[U] => DStream[V]
     ): StreamingContext = {
@@ -114,7 +112,7 @@ trait TestSuiteBase extends FunSuite with BeforeAndAfter with Logging {
    * Set up required DStreams to test the binary operation using the sequence
    * of input collections.
    */
-  def setupStreams[U: ClassTag, V: ClassTag, W: ClassTag](
+  def setupStreams[U: ClassManifest, V: ClassManifest, W: ClassManifest](
       input1: Seq[Seq[U]],
       input2: Seq[Seq[V]],
       operation: (DStream[U], DStream[V]) => DStream[W]
@@ -142,7 +140,7 @@ trait TestSuiteBase extends FunSuite with BeforeAndAfter with Logging {
    * returns the collected output. It will wait until `numExpectedOutput` number of
    * output data has been collected or timeout (set by `maxWaitTimeMillis`) is reached.
    */
-  def runStreams[V: ClassTag](
+  def runStreams[V: ClassManifest](
       ssc: StreamingContext,
       numBatches: Int,
       numExpectedOutput: Int
@@ -198,7 +196,7 @@ trait TestSuiteBase extends FunSuite with BeforeAndAfter with Logging {
    * is same as the expected output values, by comparing the output
    * collections either as lists (order matters) or sets (order does not matter)
    */
-  def verifyOutput[V: ClassTag](
+  def verifyOutput[V: ClassManifest](
       output: Seq[Seq[V]],
       expectedOutput: Seq[Seq[V]],
       useSet: Boolean
@@ -228,7 +226,7 @@ trait TestSuiteBase extends FunSuite with BeforeAndAfter with Logging {
    * Test unary DStream operation with a list of inputs, with number of
    * batches to run same as the number of expected output values
    */
-  def testOperation[U: ClassTag, V: ClassTag](
+  def testOperation[U: ClassManifest, V: ClassManifest](
       input: Seq[Seq[U]],
       operation: DStream[U] => DStream[V],
       expectedOutput: Seq[Seq[V]],
@@ -246,7 +244,7 @@ trait TestSuiteBase extends FunSuite with BeforeAndAfter with Logging {
    * @param useSet     Compare the output values with the expected output values
    *                   as sets (order matters) or as lists (order does not matter)
    */
-  def testOperation[U: ClassTag, V: ClassTag](
+  def testOperation[U: ClassManifest, V: ClassManifest](
       input: Seq[Seq[U]],
       operation: DStream[U] => DStream[V],
       expectedOutput: Seq[Seq[V]],
@@ -263,7 +261,7 @@ trait TestSuiteBase extends FunSuite with BeforeAndAfter with Logging {
    * Test binary DStream operation with two lists of inputs, with number of
    * batches to run same as the number of expected output values
    */
-  def testOperation[U: ClassTag, V: ClassTag, W: ClassTag](
+  def testOperation[U: ClassManifest, V: ClassManifest, W: ClassManifest](
       input1: Seq[Seq[U]],
       input2: Seq[Seq[V]],
       operation: (DStream[U], DStream[V]) => DStream[W],
@@ -283,7 +281,7 @@ trait TestSuiteBase extends FunSuite with BeforeAndAfter with Logging {
    * @param useSet     Compare the output values with the expected output values
    *                   as sets (order matters) or as lists (order does not matter)
    */
-  def testOperation[U: ClassTag, V: ClassTag, W: ClassTag](
+  def testOperation[U: ClassManifest, V: ClassManifest, W: ClassManifest](
       input1: Seq[Seq[U]],
       input2: Seq[Seq[V]],
       operation: (DStream[U], DStream[V]) => DStream[W],

@@ -1,7 +1,6 @@
 package spark.rdd
 
 import spark.{RDD, Partition, TaskContext}
-import scala.reflect.ClassTag
 
 
 /**
@@ -10,7 +9,7 @@ import scala.reflect.ClassTag
  * information such as the number of tuples in a partition.
  */
 private[spark]
-class MapPartitionsWithIndexRDD[U: ClassTag, T: ClassTag](
+class MapPartitionsWithIndexRDD[U: ClassManifest, T: ClassManifest](
     prev: RDD[T],
     f: (Int, Iterator[T]) => Iterator[U],
     preservesPartitioning: Boolean

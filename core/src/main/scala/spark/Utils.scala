@@ -13,7 +13,6 @@ import com.google.common.io.Files
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import scala.Some
 import spark.serializer.SerializerInstance
-import scala.reflect.ClassTag
 
 /**
  * Various utility methods used by Spark.
@@ -208,7 +207,7 @@ private object Utils extends Logging {
    * result in a new collection. Unlike scala.util.Random.shuffle, this method
    * uses a local random number generator, avoiding inter-thread contention.
    */
-  def randomize[T: ClassTag](seq: TraversableOnce[T]): Seq[T] = {
+  def randomize[T: ClassManifest](seq: TraversableOnce[T]): Seq[T] = {
     randomizeInPlace(seq.toArray)
   }
 

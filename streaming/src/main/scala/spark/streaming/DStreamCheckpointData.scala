@@ -5,11 +5,11 @@ import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.conf.Configuration
 import collection.mutable.HashMap
 import spark.Logging
-import scala.reflect.ClassTag
+
 
 
 private[streaming]
-class DStreamCheckpointData[T: ClassTag] (dstream: DStream[T])
+class DStreamCheckpointData[T: ClassManifest] (dstream: DStream[T])
   extends Serializable with Logging {
   protected val data = new HashMap[Time, AnyRef]()
 

@@ -8,7 +8,6 @@ import org.apache.hadoop.util.ReflectionUtils
 import org.apache.hadoop.fs.Path
 import java.io.{File, IOException, EOFException}
 import java.text.NumberFormat
-import scala.reflect.ClassTag
 
 private[spark] class CheckpointRDDPartition(val index: Int) extends Partition {}
 
@@ -16,7 +15,7 @@ private[spark] class CheckpointRDDPartition(val index: Int) extends Partition {}
  * This RDD represents a RDD checkpoint file (similar to HadoopRDD).
  */
 private[spark]
-class CheckpointRDD[T: ClassTag](sc: SparkContext, val checkpointPath: String)
+class CheckpointRDD[T: ClassManifest](sc: SparkContext, val checkpointPath: String)
   extends RDD[T](sc, Nil) {
 
   @transient val fs = new Path(checkpointPath).getFileSystem(sc.hadoopConfiguration)

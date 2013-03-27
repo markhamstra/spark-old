@@ -1,9 +1,8 @@
 package spark.rdd
 
 import spark.{OneToOneDependency, RDD, Partition, TaskContext}
-import scala.reflect.ClassTag
 
-private[spark] class FilteredRDD[T: ClassTag](
+private[spark] class FilteredRDD[T: ClassManifest](
     prev: RDD[T],
     f: T => Boolean)
   extends RDD[T](prev) {

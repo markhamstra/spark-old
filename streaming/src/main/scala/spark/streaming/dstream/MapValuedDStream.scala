@@ -3,10 +3,9 @@ package spark.streaming.dstream
 import spark.streaming.{Duration, DStream, Time}
 import spark.RDD
 import spark.SparkContext._
-import scala.reflect.ClassTag
 
 private[streaming]
-class MapValuedDStream[K: ClassTag, V: ClassTag, U: ClassTag](
+class MapValuedDStream[K: ClassManifest, V: ClassManifest, U: ClassManifest](
     parent: DStream[(K, V)],
     mapValueFunc: V => U
   ) extends DStream[(K, U)](parent.ssc) {

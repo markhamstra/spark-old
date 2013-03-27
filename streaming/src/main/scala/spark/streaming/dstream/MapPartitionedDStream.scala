@@ -2,10 +2,9 @@ package spark.streaming.dstream
 
 import spark.streaming.{Duration, DStream, Time}
 import spark.RDD
-import scala.reflect.ClassTag
 
 private[streaming]
-class MapPartitionedDStream[T: ClassTag, U: ClassTag](
+class MapPartitionedDStream[T: ClassManifest, U: ClassManifest](
     parent: DStream[T],
     mapPartFunc: Iterator[T] => Iterator[U],
     preservePartitioning: Boolean

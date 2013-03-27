@@ -2,14 +2,13 @@ package spark.rdd
 
 import scala.collection.mutable.HashMap
 import spark.{RDD, SparkContext, SparkEnv, Partition, TaskContext}
-import scala.reflect.ClassTag
 
 private[spark] class BlockRDDPartition(val blockId: String, idx: Int) extends Partition {
   val index = idx
 }
 
 private[spark]
-class BlockRDD[T: ClassTag](sc: SparkContext, @transient blockIds: Array[String])
+class BlockRDD[T: ClassManifest](sc: SparkContext, @transient blockIds: Array[String])
   extends RDD[T](sc, Nil) {
 
   @transient lazy val locations_  = {

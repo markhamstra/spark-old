@@ -1,10 +1,9 @@
 package spark.rdd
 
 import spark.{RDD, Partition, TaskContext}
-import scala.reflect.ClassTag
 
 private[spark]
-class MappedRDD[U: ClassTag, T: ClassTag](prev: RDD[T], f: T => U)
+class MappedRDD[U: ClassManifest, T: ClassManifest](prev: RDD[T], f: T => U)
   extends RDD[U](prev) {
 
   override def getPartitions: Array[Partition] = firstParent[T].partitions

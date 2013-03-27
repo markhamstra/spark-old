@@ -1,7 +1,6 @@
 package spark.rdd
 
 import spark.{NarrowDependency, RDD, SparkEnv, Partition, TaskContext}
-import scala.reflect.ClassTag
 
 
 class PartitionPruningRDDPartition(idx: Int, val parentSplit: Partition) extends Partition {
@@ -30,7 +29,7 @@ class PruneDependency[T](rdd: RDD[T], @transient partitionFilterFunc: Int => Boo
  * and the execution DAG has a filter on the key, we can avoid launching tasks
  * on partitions that don't have the range covering the key.
  */
-class PartitionPruningRDD[T: ClassTag](
+class PartitionPruningRDD[T: ClassManifest](
     @transient prev: RDD[T],
     @transient partitionFilterFunc: Int => Boolean)
   extends RDD[T](prev.context, List(new PruneDependency(prev, partitionFilterFunc))) {

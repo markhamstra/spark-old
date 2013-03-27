@@ -2,7 +2,6 @@ package spark.rdd
 
 import spark.{Dependency, OneToOneDependency, NarrowDependency, RDD, Partition, TaskContext}
 import java.io.{ObjectOutputStream, IOException}
-import scala.reflect.ClassTag
 
 private[spark] case class CoalescedRDDPartition(
     index: Int,
@@ -27,7 +26,7 @@ private[spark] case class CoalescedRDDPartition(
  * This transformation is useful when an RDD with many partitions gets filtered into a smaller one,
  * or to avoid having a large number of small tasks when processing a directory with many files.
  */
-class CoalescedRDD[T: ClassTag](
+class CoalescedRDD[T: ClassManifest](
     @transient var prev: RDD[T],
     maxPartitions: Int)
   extends RDD[T](prev.context, Nil) {  // Nil since we implement getDependencies

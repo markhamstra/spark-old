@@ -5,12 +5,10 @@ import akka.zeromq._
 
 import spark.Logging
 
-import scala.reflect.ClassTag
-
 /**
  * A receiver to subscribe to ZeroMQ stream.
  */
-private[streaming] class ZeroMQReceiver[T: ClassTag](publisherUrl: String,
+private[streaming] class ZeroMQReceiver[T: ClassManifest](publisherUrl: String,
   subscribe: Subscribe,
   bytesToObjects: Seq[Seq[Byte]] ⇒ Iterator[T])
   extends Actor with Receiver with Logging {

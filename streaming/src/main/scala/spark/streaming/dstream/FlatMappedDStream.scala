@@ -3,10 +3,8 @@ package spark.streaming.dstream
 import spark.streaming.{Duration, DStream, Time}
 import spark.RDD
 
-import scala.reflect.ClassTag
-
 private[streaming]
-class FlatMappedDStream[T: ClassTag, U: ClassTag](
+class FlatMappedDStream[T: ClassManifest, U: ClassManifest](
     parent: DStream[T],
     flatMapFunc: T => Traversable[U]
   ) extends DStream[U](parent.ssc) {

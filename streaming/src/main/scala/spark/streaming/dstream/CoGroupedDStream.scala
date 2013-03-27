@@ -3,10 +3,9 @@ package spark.streaming.dstream
 import spark.{RDD, Partitioner}
 import spark.rdd.CoGroupedRDD
 import spark.streaming.{Time, DStream, Duration}
-import scala.reflect.ClassTag
 
 private[streaming]
-class CoGroupedDStream[K : ClassTag](
+class CoGroupedDStream[K : ClassManifest](
     parents: Seq[DStream[(K, _)]],
     partitioner: Partitioner
   ) extends DStream[(K, Seq[Seq[_]])](parents.head.ssc) {

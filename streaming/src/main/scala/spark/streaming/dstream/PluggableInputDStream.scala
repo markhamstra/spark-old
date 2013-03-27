@@ -1,10 +1,9 @@
 package spark.streaming.dstream
 
 import spark.streaming.StreamingContext
-import scala.reflect.ClassTag
 
 private[streaming]
-class PluggableInputDStream[T: ClassTag](
+class PluggableInputDStream[T: ClassManifest](
   @transient ssc_ : StreamingContext,
   receiver: NetworkReceiver[T]) extends NetworkInputDStream[T](ssc_) {
 
