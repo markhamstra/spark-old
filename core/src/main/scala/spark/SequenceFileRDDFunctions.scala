@@ -38,10 +38,10 @@ class SequenceFileRDDFunctions[K <% Writable: ClassTag, V <% Writable : ClassTag
   extends Logging
   with Serializable {
 
-  private def getWritableClass[T <% Writable: ClassManifest](): Class[_ <: Writable] = {
+  private def getWritableClass[T <% Writable: ClassTag](): Class[_ <: Writable] = {
     val c = {
       if (classOf[Writable].isAssignableFrom(classTag[T].runtimeClass)) {
-        classManifest[T].erasure
+        classTag[T].runtimeClass
       } else {
         // We get the type of the Writable class by looking at the apply method which converts
         // from T to Writable. Since we have two apply methods we filter out the one which
