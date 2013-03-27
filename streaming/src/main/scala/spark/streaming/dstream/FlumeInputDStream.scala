@@ -18,7 +18,7 @@ import java.io.{ObjectInput, ObjectOutput, Externalizable}
 import java.nio.ByteBuffer
 
 private[streaming]
-class FlumeInputDStream[T: ClassManifest](
+class FlumeInputDStream(
   @transient ssc_ : StreamingContext,
   host: String,
   port: Int,

@@ -8,6 +8,7 @@ import scala.collection.Map
 import scala.collection.generic.Growable
 import scala.collection.mutable.HashMap
 import scala.collection.JavaConversions._
+import scala.reflect.{ClassTag, classTag}
 
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.conf.Configuration
@@ -276,9 +277,9 @@ class SparkContext(
       (implicit km: ClassManifest[K], vm: ClassManifest[V], fm: ClassManifest[F])
       : RDD[(K, V)] = {
     hadoopFile(path,
-        fm.erasure.asInstanceOf[Class[F]],
-        km.erasure.asInstanceOf[Class[K]],
-        vm.erasure.asInstanceOf[Class[V]],
+        fm.runtimeClass.asInstanceOf[Class[F]],
+        km.runtimeClass.asInstanceOf[Class[K]],
+        vm.runtimeClass.asInstanceOf[Class[V]],
         minSplits)
   }
 
@@ -299,9 +300,9 @@ class SparkContext(
       (implicit km: ClassManifest[K], vm: ClassManifest[V], fm: ClassManifest[F]): RDD[(K, V)] = {
     newAPIHadoopFile(
         path,
-        fm.erasure.asInstanceOf[Class[F]],
-        km.erasure.asInstanceOf[Class[K]],
-        vm.erasure.asInstanceOf[Class[V]])
+        fm.runtimeClass.asInstanceOf[Class[F]],
+        km.runtimeClass.asInstanceOf[Class[K]],
+        vm.runtimeClass.asInstanceOf[Class[V]])
   }
 
   /**
@@ -780,13 +781,13 @@ object SparkContext {
   private implicit def arrayToArrayWritable[T <% Writable: ClassManifest](arr: Traversable[T]): ArrayWritable = {
     def anyToWritable[U <% Writable](u: U): Writable = u
 
-    new ArrayWritable(classManifest[T].erasure.asInstanceOf[Class[Writable]],
+    new ArrayWritable(classTag[T].runtimeClass.asInstanceOf[Class[Writable]],
         arr.map(x => anyToWritable(x)).toArray)
   }
 
   // Helper objects for converting common types to Writable
-  private def simpleWritableConverter[T, W <: Writable: ClassManifest](convert: W => T) = {
-    val wClass = classManifest[W].erasure.asInstanceOf[Class[W]]
+  private def simpleWritableConverter[T, W <: Writable: ClassTag](convert: W => T) = {
+    val wClass = classTag[W].runtimeClass.asInstanceOf[Class[W]]
     new WritableConverter[T](_ => wClass, x => convert(x.asInstanceOf[W]))
   }
 
@@ -805,7 +806,7 @@ object SparkContext {
   implicit def stringWritableConverter() = simpleWritableConverter[String, Text](_.toString)
 
   implicit def writableWritableConverter[T <: Writable]() =
-    new WritableConverter[T](_.erasure.asInstanceOf[Class[T]], _.asInstanceOf[T])
+    new WritableConverter[T](_.runtimeClass.asInstanceOf[Class[T]], _.asInstanceOf[T])
 
   /**
    * Find the JAR from which a given class was loaded, to make it easy for users to pass
