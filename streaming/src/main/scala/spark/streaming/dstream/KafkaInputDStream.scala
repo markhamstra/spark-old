@@ -16,6 +16,7 @@ import kafka.utils.ZkUtils._
 import scala.collection.Map
 import scala.collection.mutable.HashMap
 import scala.collection.JavaConversions._
+import scala.reflect.ClassTag
 
 
 // Key for a specific Kafka Partition: (broker, topic, group, part)
@@ -23,7 +24,7 @@ case class KafkaPartitionKey(brokerId: Int, topic: String, groupId: String, part
 
 /**
  * Input stream that pulls messages from a Kafka Broker.
- * 
+ *
  * @param zkQuorum Zookeper quorum (hostname:port,hostname:port,..).
  * @param groupId The group id for this consumer.
  * @param topics Map of (topic_name -> numPartitions) to consume. Each partition is consumed
@@ -33,7 +34,7 @@ case class KafkaPartitionKey(brokerId: Int, topic: String, groupId: String, part
  * @param storageLevel RDD storage level.
  */
 private[streaming]
-class KafkaInputDStream[T: ClassManifest](
+class KafkaInputDStream[T: ClassTag](
     @transient ssc_ : StreamingContext,
     zkQuorum: String,
     groupId: String,
@@ -51,7 +52,7 @@ class KafkaInputDStream[T: ClassManifest](
 
 private[streaming]
 class KafkaReceiver(zkQuorum: String, groupId: String,
-  topics: Map[String, Int], initialOffsets: Map[KafkaPartitionKey, Long], 
+  topics: Map[String, Int], initialOffsets: Map[KafkaPartitionKey, Long],
   storageLevel: StorageLevel) extends NetworkReceiver[Any] {
 
   // Timeout for establishing a connection to Zookeper in ms.

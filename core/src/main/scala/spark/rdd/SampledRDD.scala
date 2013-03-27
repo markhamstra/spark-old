@@ -7,14 +7,16 @@ import cern.jet.random.engine.DRand
 
 import spark.{RDD, Partition, TaskContext}
 
+import scala.reflect.ClassTag
+
 private[spark]
 class SampledRDDPartition(val prev: Partition, val seed: Int) extends Partition with Serializable {
   override val index: Int = prev.index
 }
 
-class SampledRDD[T: ClassManifest](
+class SampledRDD[T: ClassTag](
     prev: RDD[T],
-    withReplacement: Boolean, 
+    withReplacement: Boolean,
     frac: Double,
     seed: Int)
   extends RDD[T](prev) {

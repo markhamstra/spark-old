@@ -10,6 +10,8 @@ import java.nio.channels.{ReadableByteChannel, SocketChannel}
 import java.io.EOFException
 import java.util.concurrent.ArrayBlockingQueue
 
+import scala.reflect.ClassTag
+
 
 /**
  * An input stream that reads blocks of serialized objects from a given network address.
@@ -18,7 +20,7 @@ import java.util.concurrent.ArrayBlockingQueue
  * in the format that the system is configured with.
  */
 private[streaming]
-class RawInputDStream[T: ClassManifest](
+class RawInputDStream[T: ClassTag](
     @transient ssc_ : StreamingContext,
     host: String,
     port: Int,

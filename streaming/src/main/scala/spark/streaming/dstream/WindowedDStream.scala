@@ -4,9 +4,10 @@ import spark.RDD
 import spark.rdd.UnionRDD
 import spark.storage.StorageLevel
 import spark.streaming.{Duration, Interval, Time, DStream}
+import scala.reflect.ClassTag
 
 private[streaming]
-class WindowedDStream[T: ClassManifest](
+class WindowedDStream[T: ClassTag](
     parent: DStream[T],
     _windowDuration: Duration,
     _slideDuration: Duration)

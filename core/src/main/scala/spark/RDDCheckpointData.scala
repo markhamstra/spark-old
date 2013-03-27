@@ -3,6 +3,7 @@ package spark
 import org.apache.hadoop.fs.Path
 import rdd.{CheckpointRDD, CoalescedRDD}
 import scheduler.{ResultTask, ShuffleMapTask}
+import scala.reflect.ClassTag
 
 /**
  * Enumeration to manage state transitions of an RDD through checkpointing
@@ -19,7 +20,7 @@ private[spark] object CheckpointState extends Enumeration {
  * manages the post-checkpoint state by providing the updated partitions, iterator and preferred locations
  * of the checkpointed RDD.
  */
-private[spark] class RDDCheckpointData[T: ClassManifest](rdd: RDD[T])
+private[spark] class RDDCheckpointData[T: ClassTag](rdd: RDD[T])
   extends Logging with Serializable {
 
   import CheckpointState._
