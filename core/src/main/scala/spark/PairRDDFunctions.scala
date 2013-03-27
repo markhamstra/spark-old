@@ -30,7 +30,7 @@ import spark.Partitioner._
  * Extra functions available on RDDs of (key, value) pairs through an implicit conversion.
  * Import `spark.SparkContext._` at the top of your program to use these functions.
  */
-class PairRDDFunctions[K: ClassManifest, V: ClassManifest](
+class PairRDDFunctions[K: ClassTag, V: ClassTag](
     self: RDD[(K, V)])
   extends Logging
   with HadoopMapReduceUtil
@@ -474,15 +474,15 @@ class PairRDDFunctions[K: ClassManifest, V: ClassManifest](
    * Uses `this` partitioner/partition size, because even if `other` is huge, the resulting
    * RDD will be <= us.
    */
-  def subtractByKey[W: ClassManifest](other: RDD[(K, W)]): RDD[(K, V)] =
+  def subtractByKey[W: ClassTag](other: RDD[(K, W)]): RDD[(K, V)] =
     subtractByKey(other, self.partitioner.getOrElse(new HashPartitioner(self.partitions.size)))
 
   /** Return an RDD with the pairs from `this` whose keys are not in `other`. */
-  def subtractByKey[W: ClassManifest](other: RDD[(K, W)], numPartitions: Int): RDD[(K, V)] =
+  def subtractByKey[W: ClassTag](other: RDD[(K, W)], numPartitions: Int): RDD[(K, V)] =
     subtractByKey(other, new HashPartitioner(numPartitions))
 
   /** Return an RDD with the pairs from `this` whose keys are not in `other`. */
-  def subtractByKey[W: ClassManifest](other: RDD[(K, W)], p: Partitioner): RDD[(K, V)] =
+  def subtractByKey[W: ClassTag](other: RDD[(K, W)], p: Partitioner): RDD[(K, V)] =
     new SubtractedRDD[K, V, W](self, other, p)
 
   /**
@@ -661,7 +661,7 @@ class PairRDDFunctions[K: ClassManifest, V: ClassManifest](
  * an implicit conversion. Import `spark.SparkContext._` at the top of your program to use these
  * functions. They will work with any key type that has a `scala.math.Ordered` implementation.
  */
-class OrderedRDDFunctions[K <% Ordered[K]: ClassManifest, V: ClassManifest](
+class OrderedRDDFunctions[K <% Ordered[K]: ClassTag, V: ClassTag](
   self: RDD[(K, V)])
   extends Logging
   with Serializable {

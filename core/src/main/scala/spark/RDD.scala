@@ -65,7 +65,7 @@ import SparkContext._
  * [[http://www.cs.berkeley.edu/~matei/papers/2012/nsdi_spark.pdf Spark paper]] for more details
  * on RDD internals.
  */
-abstract class RDD[T: ClassManifest](
+abstract class RDD[T: ClassTag](
     @transient private var sc: SparkContext,
     @transient private var deps: Seq[Dependency[_]]
   ) extends Serializable with Logging {
@@ -213,13 +213,13 @@ abstract class RDD[T: ClassManifest](
   /**
    * Return a new RDD by applying a function to all elements of this RDD.
    */
-  def map[U: ClassManifest](f: T => U): RDD[U] = new MappedRDD(this, sc.clean(f))
+  def map[U: ClassTag](f: T => U): RDD[U] = new MappedRDD(this, sc.clean(f))
 
   /**
    *  Return a new RDD by first applying a function to all elements of this
    *  RDD, and then flattening the results.
    */
-  def flatMap[U: ClassManifest](f: T => TraversableOnce[U]): RDD[U] =
+  def flatMap[U: ClassTag](f: T => TraversableOnce[U]): RDD[U] =
     new FlatMappedRDD(this, sc.clean(f))
 
   /**
@@ -300,25 +300,25 @@ abstract class RDD[T: ClassManifest](
    * Return the Cartesian product of this RDD and another one, that is, the RDD of all pairs of
    * elements (a, b) where a is in `this` and b is in `other`.
    */
-  def cartesian[U: ClassManifest](other: RDD[U]): RDD[(T, U)] = new CartesianRDD(sc, this, other)
+  def cartesian[U: ClassTag](other: RDD[U]): RDD[(T, U)] = new CartesianRDD(sc, this, other)
 
   /**
    * Return an RDD of grouped items.
    */
-  def groupBy[K: ClassManifest](f: T => K): RDD[(K, Seq[T])] =
+  def groupBy[K: ClassTag](f: T => K): RDD[(K, Seq[T])] =
     groupBy[K](f, defaultPartitioner(this))
 
   /**
    * Return an RDD of grouped elements. Each group consists of a key and a sequence of elements
    * mapping to that key.
    */
-  def groupBy[K: ClassManifest](f: T => K, numPartitions: Int): RDD[(K, Seq[T])] =
+  def groupBy[K: ClassTag](f: T => K, numPartitions: Int): RDD[(K, Seq[T])] =
     groupBy(f, new HashPartitioner(numPartitions))
 
   /**
    * Return an RDD of grouped items.
    */
-  def groupBy[K: ClassManifest](f: T => K, p: Partitioner): RDD[(K, Seq[T])] = {
+  def groupBy[K: ClassTag](f: T => K, p: Partitioner): RDD[(K, Seq[T])] = {
     val cleanF = sc.clean(f)
     this.map(t => (cleanF(t), t)).groupByKey(p)
   }
@@ -342,7 +342,7 @@ abstract class RDD[T: ClassManifest](
   /**
    * Return a new RDD by applying a function to each partition of this RDD.
    */
-  def mapPartitions[U: ClassManifest](f: Iterator[T] => Iterator[U],
+  def mapPartitions[U: ClassTag](f: Iterator[T] => Iterator[U],
     preservesPartitioning: Boolean = false): RDD[U] =
     new MapPartitionsRDD(this, sc.clean(f), preservesPartitioning)
 
@@ -350,7 +350,7 @@ abstract class RDD[T: ClassManifest](
    * Return a new RDD by applying a function to each partition of this RDD, while tracking the index
    * of the original partition.
    */
-  def mapPartitionsWithIndex[U: ClassManifest](
+  def mapPartitionsWithIndex[U: ClassTag](
     f: (Int, Iterator[T]) => Iterator[U],
     preservesPartitioning: Boolean = false): RDD[U] =
     new MapPartitionsWithIndexRDD(this, sc.clean(f), preservesPartitioning)
@@ -360,7 +360,7 @@ abstract class RDD[T: ClassManifest](
    * of the original partition.
    */
   @deprecated("use mapPartitionsWithIndex")
-  def mapPartitionsWithSplit[U: ClassManifest](
+  def mapPartitionsWithSplit[U: ClassTag](
     f: (Int, Iterator[T]) => Iterator[U],
     preservesPartitioning: Boolean = false): RDD[U] =
     new MapPartitionsWithIndexRDD(this, sc.clean(f), preservesPartitioning)
@@ -370,7 +370,7 @@ abstract class RDD[T: ClassManifest](
    * additional parameter is produced by constructA, which is called in each
    * partition with the index of that partition.
    */
-  def mapWith[A: ClassManifest, U: ClassManifest](constructA: Int => A, preservesPartitioning: Boolean = false)
+  def mapWith[A: ClassTag, U: ClassTag](constructA: Int => A, preservesPartitioning: Boolean = false)
     (f:(T, A) => U): RDD[U] = {
       def iterF(index: Int, iter: Iterator[T]): Iterator[U] = {
         val a = constructA(index)
@@ -384,7 +384,7 @@ abstract class RDD[T: ClassManifest](
    * additional parameter is produced by constructA, which is called in each
    * partition with the index of that partition.
    */
-  def flatMapWith[A: ClassManifest, U: ClassManifest](constructA: Int => A, preservesPartitioning: Boolean = false)
+  def flatMapWith[A: ClassTag, U: ClassTag](constructA: Int => A, preservesPartitioning: Boolean = false)
     (f:(T, A) => Seq[U]): RDD[U] = {
       def iterF(index: Int, iter: Iterator[T]): Iterator[U] = {
         val a = constructA(index)
@@ -398,7 +398,7 @@ abstract class RDD[T: ClassManifest](
    * This additional parameter is produced by constructA, which is called in each
    * partition with the index of that partition.
    */
-  def foreachWith[A: ClassManifest](constructA: Int => A)
+  def foreachWith[A: ClassTag](constructA: Int => A)
     (f:(T, A) => Unit) {
       def iterF(index: Int, iter: Iterator[T]): Iterator[T] = {
         val a = constructA(index)
@@ -412,7 +412,7 @@ abstract class RDD[T: ClassManifest](
    * additional parameter is produced by constructA, which is called in each
    * partition with the index of that partition.
    */
-  def filterWith[A: ClassManifest](constructA: Int => A)
+  def filterWith[A: ClassTag](constructA: Int => A)
     (p:(T, A) => Boolean): RDD[T] = {
       def iterF(index: Int, iter: Iterator[T]): Iterator[T] = {
         val a = constructA(index)
@@ -427,7 +427,7 @@ abstract class RDD[T: ClassManifest](
    * partitions* and the *same number of elements in each partition* (e.g. one was made through
    * a map on the other).
    */
-  def zip[U: ClassManifest](other: RDD[U]): RDD[(T, U)] = new ZippedRDD(sc, this, other)
+  def zip[U: ClassTag](other: RDD[U]): RDD[(T, U)] = new ZippedRDD(sc, this, other)
 
   // Actions (launch a job to return a value to the user program)
 
@@ -463,7 +463,7 @@ abstract class RDD[T: ClassManifest](
   /**
    * Return an RDD that contains all matching values by applying `f`.
    */
-  def collect[U: ClassManifest](f: PartialFunction[T, U]): RDD[U] = {
+  def collect[U: ClassTag](f: PartialFunction[T, U]): RDD[U] = {
     filter(f.isDefinedAt).map(f)
   }
 
@@ -553,7 +553,7 @@ abstract class RDD[T: ClassManifest](
    * allowed to modify and return their first argument instead of creating a new U to avoid memory
    * allocation.
    */
-  def aggregate[U: ClassManifest](zeroValue: U)(seqOp: (U, T) => U, combOp: (U, U) => U): U = {
+  def aggregate[U: ClassTag](zeroValue: U)(seqOp: (U, T) => U, combOp: (U, U) => U): U = {
     // Clone the zero value since we will also be serializing it as part of tasks
     var jobResult = Utils.clone(zeroValue, sc.env.closureSerializer.newInstance())
     val cleanSeqOp = sc.clean(seqOp)
@@ -749,7 +749,7 @@ abstract class RDD[T: ClassManifest](
   private[spark] var checkpointData: Option[RDDCheckpointData[T]] = None
 
   /** Returns the first parent RDD */
-  protected[spark] def firstParent[U: ClassManifest] = {
+  protected[spark] def firstParent[U: ClassTag] = {
     dependencies.head.rdd.asInstanceOf[RDD[U]]
   }
 

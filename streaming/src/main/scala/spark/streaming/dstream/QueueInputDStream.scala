@@ -5,10 +5,11 @@ import spark.rdd.UnionRDD
 
 import scala.collection.mutable.Queue
 import scala.collection.mutable.ArrayBuffer
+import scala.reflect.ClassTag
 import spark.streaming.{Time, StreamingContext}
 
 private[streaming]
-class QueueInputDStream[T: ClassManifest](
+class QueueInputDStream[T: ClassTag](
     @transient ssc: StreamingContext,
     val queue: Queue[RDD[T]],
     oneAtATime: Boolean,

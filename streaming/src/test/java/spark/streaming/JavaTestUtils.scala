@@ -6,6 +6,7 @@ import spark.streaming.api.java.{JavaPairDStream, JavaDStreamLike, JavaDStream, 
 import spark.streaming._
 import java.util.ArrayList
 import collection.JavaConversions._
+import scala.reflect.ClassTag
 
 /** Exposes streaming test functionality in a Java-friendly way. */
 trait JavaTestBase extends TestSuiteBase {
@@ -20,8 +21,8 @@ trait JavaTestBase extends TestSuiteBase {
     numPartitions: Int) = {
     val seqData = data.map(Seq(_:_*))
 
-    implicit val cm: ClassManifest[T] =
-      implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[T]]
+    implicit val cm: ClassTag[T] =
+      implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[T]]
     val dstream = new TestInputStream[T](ssc.ssc, seqData, numPartitions)
     ssc.ssc.registerInputStream(dstream)
     new JavaDStream[T](dstream)
@@ -34,8 +35,8 @@ trait JavaTestBase extends TestSuiteBase {
   def attachTestOutputStream[T, This <: spark.streaming.api.java.JavaDStreamLike[T, This, R],
       R <: spark.api.java.JavaRDDLike[T, R]](
     dstream: JavaDStreamLike[T, This, R]) = {
-    implicit val cm: ClassManifest[T] =
-      implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[T]]
+    implicit val cm: ClassTag[T] =
+      implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[T]]
     val ostream = new TestOutputStream(dstream.dstream,
       new ArrayBuffer[Seq[T]] with SynchronizedBuffer[Seq[T]])
     dstream.dstream.ssc.registerOutputStream(ostream)
@@ -48,8 +49,8 @@ trait JavaTestBase extends TestSuiteBase {
    */
   def runStreams[V](
     ssc: JavaStreamingContext, numBatches: Int, numExpectedOutput: Int): JList[JList[V]] = {
-    implicit val cm: ClassManifest[V] =
-      implicitly[ClassManifest[AnyRef]].asInstanceOf[ClassManifest[V]]
+    implicit val cm: ClassTag[V] =
+      implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[V]]
     val res = runStreams[V](ssc.ssc, numBatches, numExpectedOutput)
     val out = new ArrayList[JList[V]]()
     res.map(entry => out.append(new ArrayList[V](entry)))

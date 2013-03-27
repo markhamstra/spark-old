@@ -33,7 +33,7 @@ import spark.SparkContext._
  *
  * Users should import `spark.SparkContext._` at the top of their program to use these functions.
  */
-class SequenceFileRDDFunctions[K <% Writable: ClassManifest, V <% Writable : ClassManifest](
+class SequenceFileRDDFunctions[K <% Writable: ClassTag, V <% Writable : ClassTag](
     self: RDD[(K, V)])
   extends Logging
   with Serializable {
