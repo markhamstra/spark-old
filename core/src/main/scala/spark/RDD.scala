@@ -8,7 +8,7 @@ import scala.collection.Map
 import scala.collection.JavaConversions.mapAsScalaMap
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
-import scala.reflect.ClassTag
+import scala.reflect.{ClassTag, classTag}
 
 import org.apache.hadoop.io.BytesWritable
 import org.apache.hadoop.io.NullWritable
@@ -600,7 +600,7 @@ abstract class RDD[T: ClassTag](
    * combine step happens locally on the master, equivalent to running a single reduce task.
    */
   def countByValue(): Map[T, Long] = {
-    if (elementClassManifest.erasure.isArray) {
+    if (elementClassManifest.runtimeClass.isArray) {
       throw new SparkException("countByValue() does not support arrays")
     }
     // TODO: This should perhaps be distributed by default.
@@ -631,7 +631,7 @@ abstract class RDD[T: ClassTag](
       timeout: Long,
       confidence: Double = 0.95
       ): PartialResult[Map[T, BoundedDouble]] = {
-    if (elementClassManifest.erasure.isArray) {
+    if (elementClassManifest.runtimeClass.isArray) {
       throw new SparkException("countByValueApprox() does not support arrays")
     }
     val countPartition: (TaskContext, Iterator[T]) => OLMap[T] = { (ctx, iter) =>
@@ -744,7 +744,7 @@ abstract class RDD[T: ClassTag](
   /** Record user function generating this RDD. */
   private[spark] val origin = Utils.getSparkCallSite
 
-  private[spark] def elementClassManifest: ClassTag[T] = classManifest[T]
+  private[spark] def elementClassManifest: ClassTag[T] = classTag[T]
 
   private[spark] var checkpointData: Option[RDDCheckpointData[T]] = None
 

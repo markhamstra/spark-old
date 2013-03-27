@@ -10,7 +10,7 @@ import spark.SparkContext._
 import spark.storage.StorageLevel
 
 import scala.collection.mutable.ArrayBuffer
-import scala.reflect.ClassTag
+import scala.reflect.{ClassTag, classTag}
 
 import org.apache.hadoop.mapred.{JobConf, OutputFormat}
 import org.apache.hadoop.mapreduce.{OutputFormat => NewOutputFormat}
@@ -362,7 +362,7 @@ extends Serializable {
   /**
    * Return a new "state" DStream where the state for each key is updated by applying
    * the given function on the previous state of the key and the new values of each key.
-   * [[spark.Paxrtitioner]] is used to control the partitioning of each RDD.
+   * [[spark.Partitioner]] is used to control the partitioning of each RDD.
    * @param updateFunc State update function. If `this` function returns None, then
    *                   corresponding state key-value pair will be eliminated. Note, that
    *                   this function may generate a different a tuple with a different key
@@ -416,7 +416,7 @@ extends Serializable {
       partitioner
     )
     val pdfs = new PairDStreamFunctions[K, Seq[Seq[_]]](cgd)(
-      classManifest[K],
+      classTag[K],
       Manifests.seqSeqManifest
     )
     pdfs.mapValues {
@@ -457,7 +457,7 @@ extends Serializable {
       prefix: String,
       suffix: String
     )(implicit fm: ClassTag[F]) {
-    saveAsHadoopFiles(prefix, suffix, getKeyClass, getValueClass, fm.erasure.asInstanceOf[Class[F]])
+    saveAsHadoopFiles(prefix, suffix, getKeyClass, getValueClass, fm.runtimeClass.asInstanceOf[Class[F]])
   }
 
   /**
@@ -487,7 +487,7 @@ extends Serializable {
       prefix: String,
       suffix: String
     )(implicit fm: ClassTag[F])  {
-    saveAsNewAPIHadoopFiles(prefix, suffix, getKeyClass, getValueClass, fm.erasure.asInstanceOf[Class[F]])
+    saveAsNewAPIHadoopFiles(prefix, suffix, getKeyClass, getValueClass, fm.runtimeClass.asInstanceOf[Class[F]])
   }
 
   /**
@@ -509,9 +509,9 @@ extends Serializable {
     self.foreach(saveFunc)
   }
 
-  private def getKeyClass() = implicitly[ClassTag[K]].erasure
+  private def getKeyClass() = implicitly[ClassTag[K]].runtimeClass
 
-  private def getValueClass() = implicitly[ClassTag[V]].erasure
+  private def getValueClass() = implicitly[ClassTag[V]].runtimeClass
 }
 
 

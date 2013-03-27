@@ -11,7 +11,7 @@ import java.util.Date
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Map
 import scala.collection.mutable.HashMap
-import scala.reflect.ClassTag
+import scala.reflect.{ClassTag, classTag}
 
 import org.apache.hadoop.mapred.JobConf
 import org.apache.hadoop.mapred.OutputFormat
@@ -40,7 +40,7 @@ class SequenceFileRDDFunctions[K <% Writable: ClassTag, V <% Writable : ClassTag
 
   private def getWritableClass[T <% Writable: ClassTag](): Class[_ <: Writable] = {
     val c = {
-      if (classOf[Writable].isAssignableFrom(classManifest[T].erasure)) {
+      if (classOf[Writable].isAssignableFrom(classTag[T].runtimeClass)) {
         classManifest[T].erasure
       } else {
         // We get the type of the Writable class by looking at the apply method which converts
