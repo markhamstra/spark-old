@@ -5,7 +5,7 @@ import spark.streaming.dstream.{ReducedWindowedDStream, StateDStream}
 import spark.streaming.dstream.{CoGroupedDStream, ShuffledDStream}
 import spark.streaming.dstream.{MapValuedDStream, FlatMapValuedDStream}
 
-import spark.{Manifests, RDD, Partitioner, HashPartitioner}
+import spark.{ClassTags, RDD, Partitioner, HashPartitioner}
 import spark.SparkContext._
 import spark.storage.StorageLevel
 
@@ -417,7 +417,7 @@ extends Serializable {
     )
     val pdfs = new PairDStreamFunctions[K, Seq[Seq[_]]](cgd)(
       classTag[K],
-      Manifests.seqSeqManifest
+      ClassTags.seqSeqClassTag
     )
     pdfs.mapValues {
       case Seq(vs, ws) =>

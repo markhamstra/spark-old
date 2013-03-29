@@ -15,7 +15,7 @@ import JavaDStream._
 
 trait JavaDStreamLike[T, This <: JavaDStreamLike[T, This, R], R <: JavaRDDLike[T, R]]
     extends Serializable {
-  implicit val classManifest: ClassTag[T]
+  implicit val classTag: ClassTag[T]
 
   def dstream: DStream[T]
 

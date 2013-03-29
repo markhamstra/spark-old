@@ -395,7 +395,7 @@ class PairRDDFunctions[K: ClassTag, V: ClassTag](
     val cg = new CoGroupedRDD[K](
         Seq(self.asInstanceOf[RDD[(K, _)]], other.asInstanceOf[RDD[(K, _)]]),
         partitioner)
-    val prfs = new PairRDDFunctions[K, Seq[Seq[_]]](cg)(classTag[K], Manifests.seqSeqManifest)
+    val prfs = new PairRDDFunctions[K, Seq[Seq[_]]](cg)(classTag[K], ClassTags.seqSeqClassTag)
     prfs.mapValues {
       case Seq(vs, ws) =>
         (vs.asInstanceOf[Seq[V]], ws.asInstanceOf[Seq[W]])
@@ -416,7 +416,7 @@ class PairRDDFunctions[K: ClassTag, V: ClassTag](
             other1.asInstanceOf[RDD[(K, _)]],
             other2.asInstanceOf[RDD[(K, _)]]),
         partitioner)
-    val prfs = new PairRDDFunctions[K, Seq[Seq[_]]](cg)(classTag[K], Manifests.seqSeqManifest)
+    val prfs = new PairRDDFunctions[K, Seq[Seq[_]]](cg)(classTag[K], ClassTags.seqSeqClassTag)
     prfs.mapValues {
       case Seq(vs, w1s, w2s) =>
         (vs.asInstanceOf[Seq[V]], w1s.asInstanceOf[Seq[W1]], w2s.asInstanceOf[Seq[W2]])
@@ -705,6 +705,6 @@ class FlatMappedValuesRDD[K, V, U](prev: RDD[(K, V)], f: V => TraversableOnce[U]
   }
 }
 
-private[spark] object Manifests {
-  val seqSeqManifest = classTag[Seq[Seq[_]]]
+private[spark] object ClassTags {
+  val seqSeqClassTag = classTag[Seq[Seq[_]]]
 }

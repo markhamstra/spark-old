@@ -25,7 +25,7 @@ import scala.reflect.ClassTag
  *  - A time interval at which the DStream generates an RDD
  *  - A function that is used to generate an RDD after each time interval
  */
-class JavaDStream[T](val dstream: DStream[T])(implicit val classManifest: ClassTag[T])
+class JavaDStream[T](val dstream: DStream[T])(implicit val classTag: ClassTag[T])
     extends JavaDStreamLike[T, JavaDStream[T], JavaRDD[T]] {
 
   override def wrapRDD(rdd: RDD[T]): JavaRDD[T] = JavaRDD.fromRDD(rdd)

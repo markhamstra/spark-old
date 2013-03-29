@@ -19,8 +19,8 @@ import com.google.common.base.Optional
 import spark.RDD
 
 class JavaPairDStream[K, V](val dstream: DStream[(K, V)])(
-    implicit val kManifiest: ClassTag[K],
-    implicit val vManifest: ClassTag[V])
+    implicit val kClassTag: ClassTag[K],
+    implicit val vClassTag: ClassTag[V])
     extends JavaDStreamLike[(K, V), JavaPairDStream[K, V], JavaPairRDD[K, V]] {
 
   override def wrapRDD(rdd: RDD[(K, V)]): JavaPairRDD[K, V] = JavaPairRDD.fromRDD(rdd)
@@ -576,7 +576,7 @@ class JavaPairDStream[K, V](val dstream: DStream[(K, V)])(
     dstream.saveAsNewAPIHadoopFiles(prefix, suffix, keyClass, valueClass, outputFormatClass, conf)
   }
 
-  override val classManifest: ClassTag[(K, V)] =
+  override val classTag: ClassTag[(K, V)] =
     implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[Tuple2[K, V]]]
 }
 
