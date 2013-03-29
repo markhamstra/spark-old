@@ -468,7 +468,6 @@ abstract class DStream[T: ClassTag] (
   def foreach(foreachFunc: (RDD[T], Time) => Unit) {
     val newStream = new ForEachDStream(this, context.sparkContext.clean(foreachFunc))
     ssc.registerOutputStream(newStream)
-    newStream
   }
 
   /**
