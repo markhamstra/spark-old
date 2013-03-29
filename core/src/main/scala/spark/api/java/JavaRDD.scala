@@ -5,7 +5,7 @@ import spark.api.java.function.{Function => JFunction}
 import spark.storage.StorageLevel
 import scala.reflect.ClassTag
 
-class JavaRDD[T](val rdd: RDD[T])(implicit val classManifest: ClassTag[T]) extends
+class JavaRDD[T](val rdd: RDD[T])(implicit val classTag: ClassTag[T]) extends
 JavaRDDLike[T, JavaRDD[T]] {
 
   override def wrapRDD(rdd: RDD[T]): JavaRDD[T] = JavaRDD.fromRDD(rdd)

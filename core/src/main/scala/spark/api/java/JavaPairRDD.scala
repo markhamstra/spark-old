@@ -24,12 +24,12 @@ import spark.Partitioner._
 import spark.RDD
 import spark.SparkContext.rddToPairRDDFunctions
 
-class JavaPairRDD[K, V](val rdd: RDD[(K, V)])(implicit val kManifest: ClassTag[K],
-  implicit val vManifest: ClassTag[V]) extends JavaRDDLike[(K, V), JavaPairRDD[K, V]] {
+class JavaPairRDD[K, V](val rdd: RDD[(K, V)])(implicit val kClassTag: ClassTag[K],
+  implicit val vClassTag: ClassTag[V]) extends JavaRDDLike[(K, V), JavaPairRDD[K, V]] {
 
   override def wrapRDD(rdd: RDD[(K, V)]): JavaPairRDD[K, V] = JavaPairRDD.fromRDD(rdd)
 
-  override val classManifest: ClassTag[(K, V)] =
+  override val classTag: ClassTag[(K, V)] =
     implicitly[ClassTag[AnyRef]].asInstanceOf[ClassTag[Tuple2[K, V]]]
 
   import JavaPairRDD._

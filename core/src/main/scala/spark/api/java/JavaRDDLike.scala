@@ -16,7 +16,7 @@ import com.google.common.base.Optional
 trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends Serializable {
   def wrapRDD(rdd: RDD[T]): This
 
-  implicit val classManifest: ClassTag[T]
+  implicit val classTag: ClassTag[T]
 
   def rdd: RDD[T]
 
@@ -129,8 +129,8 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends Serializable {
    * elements (a, b) where a is in `this` and b is in `other`.
    */
   def cartesian[U](other: JavaRDDLike[U, _]): JavaPairRDD[T, U] =
-    JavaPairRDD.fromRDD(rdd.cartesian(other.rdd)(other.classManifest))(classManifest,
-      other.classManifest)
+    JavaPairRDD.fromRDD(rdd.cartesian(other.rdd)(other.classTag))(classTag,
+      other.classTag)
 
   /**
    * Return an RDD of grouped elements. Each group consists of a key and a sequence of elements
@@ -180,7 +180,7 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends Serializable {
    * a map on the other).
    */
   def zip[U](other: JavaRDDLike[U, _]): JavaPairRDD[T, U] = {
-    JavaPairRDD.fromRDD(rdd.zip(other.rdd)(other.classManifest))(classManifest, other.classManifest)
+    JavaPairRDD.fromRDD(rdd.zip(other.rdd)(other.classTag))(classTag, other.classTag)
   }
 
   // Actions (launch a job to return a value to the user program)

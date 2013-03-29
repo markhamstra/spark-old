@@ -50,6 +50,6 @@ object PartitionPruningRDD {
    * when its type T is not known at compile time.
    */
   def create[T](rdd: RDD[T], partitionFilterFunc: Int => Boolean) = {
-    new PartitionPruningRDD[T](rdd, partitionFilterFunc)(rdd.elementClassManifest)
+    new PartitionPruningRDD[T](rdd, partitionFilterFunc)(rdd.elementClassTag)
   }
 }

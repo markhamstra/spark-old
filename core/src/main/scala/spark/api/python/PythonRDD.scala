@@ -252,7 +252,7 @@ private[spark] object PythonRDD {
   }
 
   def takePartition[T](rdd: RDD[T], partition: Int): Iterator[T] = {
-    implicit val cm : ClassTag[T] = rdd.elementClassManifest
+    implicit val cm : ClassTag[T] = rdd.elementClassTag
     rdd.context.runJob(rdd, ((x: Iterator[T]) => x.toArray), Seq(partition), true).head.iterator
   }
 }

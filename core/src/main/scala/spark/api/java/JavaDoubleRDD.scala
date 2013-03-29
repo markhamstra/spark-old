@@ -12,7 +12,7 @@ import scala.reflect.ClassTag
 
 class JavaDoubleRDD(val srdd: RDD[scala.Double]) extends JavaRDDLike[Double, JavaDoubleRDD] {
 
-  override val classManifest: ClassTag[Double] = implicitly[ClassTag[Double]]
+  override val classTag: ClassTag[Double] = implicitly[ClassTag[Double]]
 
   override val rdd: RDD[Double] = srdd.map(x => Double.valueOf(x))
 
