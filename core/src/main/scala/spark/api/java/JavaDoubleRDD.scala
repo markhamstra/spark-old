@@ -102,7 +102,7 @@ class JavaDoubleRDD(val srdd: RDD[scala.Double]) extends JavaRDDLike[Double, Jav
   /** Return the sum of the elements in this RDD. */
   def sum(): Double = srdd.sum()
 
-  /** Return a [[spark.StatCounter]] describing the elements in this RDD. */
+  /** Return a [[spark.util.StatCounter]] describing the elements in this RDD. */
   def stats(): StatCounter = srdd.stats()
 
   /** Return the mean of the elements in this RDD. */

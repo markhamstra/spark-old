@@ -306,7 +306,7 @@ class JavaSparkContext(val sc: SparkContext) extends JavaSparkContextVarargsWork
     sc.accumulable(initialValue)(param)
 
   /**
-   * Broadcast a read-only variable to the cluster, returning a [[spark.Broadcast]] object for
+   * Broadcast a read-only variable to the cluster, returning a [[spark.broadcast.Broadcast]] object for
    * reading it in distributed functions. The variable will be sent to each cluster only once.
    */
   def broadcast[T](value: T): Broadcast[T] = sc.broadcast(value)
