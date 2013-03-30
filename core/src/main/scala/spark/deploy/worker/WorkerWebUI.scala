@@ -12,12 +12,13 @@ import spray.http.MediaTypes._
 
 import spark.deploy.{WorkerState, RequestWorkerState}
 import spark.deploy.JsonProtocol._
+import java.io.File
 
 /**
  * Web UI server for the standalone worker.
  */
 private[spark]
-class WorkerWebUI(worker: ActorRef)(implicit val context: ActorContext) extends Directives {
+class WorkerWebUI(worker: ActorRef, workDir: File)(implicit val context: ActorContext) extends Directives {
   import context.dispatcher
 
   val actorSystem         = context.system
@@ -47,7 +48,7 @@ class WorkerWebUI(worker: ActorRef)(implicit val context: ActorContext) extends 
       path("log") {
         parameters("appId", "executorId", "logType") { (appId, executorId, logType) =>
           respondWithMediaType(`text/plain`) {
-            getFromFile("work/" + appId + "/" + executorId + "/" + logType)
+            getFromFile(workDir.getPath() + "/" + appId + "/" + executorId + "/" + logType)
           }
         }
       } ~

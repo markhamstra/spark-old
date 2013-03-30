@@ -82,7 +82,7 @@ private[spark] class Worker(
   }
 
   def startWebUi() {
-    val webUi = new WorkerWebUI(self)
+    val webUi = new WorkerWebUI(self, workDir)
     try {
       AkkaUtils.startSprayServer(context.system, "0.0.0.0", webUiPort, webUi.handler)
     } catch {
