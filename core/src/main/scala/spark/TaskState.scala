@@ -2,12 +2,9 @@ package spark
 
 import org.apache.mesos.Protos.{TaskState => MesosTaskState}
 
-private[spark] object TaskState
-  extends Enumeration("LAUNCHING", "RUNNING", "FINISHED", "FAILED", "KILLED", "LOST") {
-
-  val LAUNCHING, RUNNING, FINISHED, FAILED, KILLED, LOST = Value
-
+private[spark] object TaskState extends Enumeration {
   type TaskState = Value
+  val LAUNCHING, RUNNING, FINISHED, FAILED, KILLED, LOST = Value
 
   def isFinished(state: TaskState) = Seq(FINISHED, FAILED, LOST).contains(state)
 

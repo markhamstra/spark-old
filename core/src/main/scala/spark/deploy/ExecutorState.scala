@@ -1,11 +1,8 @@
 package spark.deploy
 
-private[spark] object ExecutorState
-  extends Enumeration("LAUNCHING", "LOADING", "RUNNING", "KILLED", "FAILED", "LOST") {
-
-  val LAUNCHING, LOADING, RUNNING, KILLED, FAILED, LOST = Value
-
+private[spark] object ExecutorState extends Enumeration {
   type ExecutorState = Value
+  val LAUNCHING, LOADING, RUNNING, KILLED, FAILED, LOST = Value
 
   def isFinished(state: ExecutorState): Boolean = Seq(KILLED, FAILED, LOST).contains(state)
 }
