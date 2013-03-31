@@ -9,8 +9,10 @@ import org.apache.hadoop.mapred.JobConf
 import org.apache.hadoop.mapred.RecordReader
 import org.apache.hadoop.mapred.Reporter
 import org.apache.hadoop.util.ReflectionUtils
+import org.apache.hadoop.conf.Configurable
 
 import spark.{Logging, Partition, RDD, SerializableWritable, SparkContext, TaskContext}
+import spark.util.NextIterator
 
 
 /**
@@ -18,7 +20,7 @@ import spark.{Logging, Partition, RDD, SerializableWritable, SparkContext, TaskC
  */
 private[spark] class HadoopPartition(rddId: Int, idx: Int, @transient s: InputSplit)
   extends Partition {
-  
+
   val inputSplit = new SerializableWritable[InputSplit](s)
 
   override def hashCode(): Int = (41 * (41 + rddId) + idx).toInt
@@ -44,6 +46,9 @@ class HadoopRDD[K, V](
 
   override def getPartitions: Array[Partition] = {
     val inputFormat = createInputFormat(conf)
+    if (inputFormat.isInstanceOf[Configurable]) {
+      inputFormat.asInstanceOf[Configurable].setConf(conf)
+    }
     val inputSplits = inputFormat.getSplits(conf, minSplits)
     val array = new Array[Partition](inputSplits.size)
     for (i <- 0 until inputSplits.size) {
@@ -57,47 +62,34 @@ class HadoopRDD[K, V](
       .asInstanceOf[InputFormat[K, V]]
   }
 
-  override def compute(theSplit: Partition, context: TaskContext) = new Iterator[(K, V)] {
+  override def compute(theSplit: Partition, context: TaskContext) = new NextIterator[(K, V)] {
     val split = theSplit.asInstanceOf[HadoopPartition]
     var reader: RecordReader[K, V] = null
 
     val conf = confBroadcast.value.value
     val fmt = createInputFormat(conf)
+    if (fmt.isInstanceOf[Configurable]) {
+      fmt.asInstanceOf[Configurable].setConf(conf)
+    }
     reader = fmt.getRecordReader(split.inputSplit.value, conf, Reporter.NULL)
 
     // Register an on-task-completion callback to close the input stream.
-    context.addOnCompleteCallback{ () => close() }
+    context.addOnCompleteCallback{ () => closeIfNeeded() }
 
     val key: K = reader.createKey()
     val value: V = reader.createValue()
-    var gotNext = false
-    var finished = false
 
-    override def hasNext: Boolean = {
-      if (!gotNext) {
-        try {
-          finished = !reader.next(key, value)
-        } catch {
-          case eof: EOFException =>
-            finished = true
-        }
-        gotNext = true
-      }
-      !finished
-    }
-
-    override def next: (K, V) = {
-      if (!gotNext) {
+    override def getNext() = {
+      try {
         finished = !reader.next(key, value)
+      } catch {
+        case eof: EOFException =>
+          finished = true
       }
-      if (finished) {
-        throw new NoSuchElementException("End of stream")
-      }
-      gotNext = false
       (key, value)
     }
 
-    private def close() {
+    override def close() {
       try {
         reader.close()
       } catch {
