@@ -45,7 +45,7 @@ class SequenceFileRDDFunctions[K <% Writable: ClassTag, V <% Writable : ClassTag
       } else {
         // We get the type of the Writable class by looking at the apply method which converts
         // from T to Writable. Since we have two apply methods we filter out the one which
-        // is of the form "java.lang.Object apply(java.lang.Object)"
+        // is not of the form "java.lang.Object apply(java.lang.Object)"
         implicitly[T => Writable].getClass.getDeclaredMethods().filter(
             m => m.getReturnType().toString != "class java.lang.Object" &&
                  m.getName() == "apply")(0).getReturnType
