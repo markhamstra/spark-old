@@ -1,13 +1,10 @@
 package spark
 
-import java.net.URL
-import java.util.{Date, Random}
-import java.util.{HashMap => JHashMap}
+import java.util.Random
 
 import scala.collection.Map
 import scala.collection.JavaConversions.mapAsScalaMap
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.HashMap
 
 import org.apache.hadoop.io.BytesWritable
 import org.apache.hadoop.io.NullWritable
@@ -28,6 +25,7 @@ import spark.rdd.FlatMappedRDD
 import spark.rdd.GlommedRDD
 import spark.rdd.MappedRDD
 import spark.rdd.MapPartitionsRDD
+import spark.rdd.MapPartitionsWithSetupAndCleanup
 import spark.rdd.MapPartitionsWithIndexRDD
 import spark.rdd.PipedRDD
 import spark.rdd.SampledRDD
@@ -37,7 +35,8 @@ import spark.rdd.UnionRDD
 import spark.rdd.ZippedRDD
 import spark.storage.StorageLevel
 
-import SparkContext._
+import spark.SparkContext._
+import spark.RDD.PartitionMapper
 
 /**
  * A Resilient Distributed Dataset (RDD), the basic abstraction in Spark. Represents an immutable,
@@ -429,6 +428,18 @@ abstract class RDD[T: ClassManifest](
   }
 
   /**
+   * Return a new RDD by applying a function to every element in this RDD, with extra setup & cleanup
+   * at the beginning & end of processing every partition.
+   *
+   * This might be useful if you need to setup some resources per task & cleanup them up at the end, eg.
+   * a db connection
+   */
+  def mapWithSetup[U: ClassManifest](
+    m: PartitionMapper[T,U],
+    preservesPartitioning: Boolean = false): RDD[U] =
+      new MapPartitionsWithSetupAndCleanup(this, m, preservesPartitioning)
+
+  /**
    * Zips this RDD with another one, returning key-value pairs with the first element in each RDD,
    * second element in each RDD, etc. Assumes that the two RDDs have the *same number of
    * partitions* and the *same number of elements in each partition* (e.g. one was made through
@@ -817,4 +828,29 @@ abstract class RDD[T: ClassManifest](
     id,
     origin)
 
+}
+
+object RDD {
+
+  /**
+   * Defines a map function over elements of an RDD, but with extra setup and cleanup
+   * that happens
+   */
+  trait PartitionMapper[T,U] extends Serializable {
+    /**
+     * called at the start of processing of each partition
+     */
+    def setup(partiton:Int)
+
+    /**
+     * transform one element of the partition
+     */
+    @throws(classOf[Exception]) //for the java api
+    def map(t: T) : U
+
+    /**
+     * called at the end of each partition.  This will get called even if the map failed (eg., an exception was thrown)
+     */
+    def cleanup
+  }
 }

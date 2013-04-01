@@ -19,10 +19,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import spark.api.java.JavaDoubleRDD;
-import spark.api.java.JavaPairRDD;
-import spark.api.java.JavaRDD;
-import spark.api.java.JavaSparkContext;
+import spark.api.java.*;
 import spark.api.java.function.*;
 import spark.partial.BoundedDouble;
 import spark.partial.PartialResult;
@@ -420,6 +417,54 @@ public class JavaAPISuite implements Serializable {
         }
     });
     Assert.assertEquals("[3, 7]", partitionSums.collect().toString());
+  }
+
+  @Test
+  public void mapPartitionsWithSetupAndCleanup() {
+    //the real test of the behavior is in the scala test, just make sure the java api wrappers are OK
+    JavaRDD<Integer> rdd = sc.parallelize(Arrays.asList(1,2,3,4,5,6,7,8,9,10), 4);
+
+    JavaPairRDD<Integer,String> pairRdd = rdd.mapWithSetup(new JavaPairPartitionMapper<Integer, Integer, String>() {
+      @Override
+      public void setup(int partition) {
+        System.out.println("setup " + partition);
+      }
+
+      @Override
+      public Tuple2<Integer, String> map(Integer integer) {
+        return new Tuple2<Integer, String>(integer, integer + "_");
+      }
+
+      @Override
+      public void cleanup() {
+        System.out.println("cleanup");
+      }
+    });
+    Assert.assertEquals(
+      "[(1,1_), (2,2_), (3,3_), (4,4_), (5,5_), (6,6_), (7,7_), (8,8_), (9,9_), (10,10_)]",
+      pairRdd.collect().toString());
+
+
+    JavaDoubleRDD doubleRdd = rdd.mapWithSetup(new JavaDoublePartitionMapper<Integer>() {
+      @Override
+      public void setup(int partition) {
+        System.out.println("setup" + partition);
+      }
+
+      @Override
+      public Double map(Integer integer) throws Exception {
+        return integer.doubleValue();
+      }
+
+      @Override
+      public void cleanup() {
+        System.out.println("cleanup");
+      }
+    });
+    Assert.assertEquals(
+      "[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]",
+      doubleRdd.collect().toString());
+
   }
 
   @Test
