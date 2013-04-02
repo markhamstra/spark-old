@@ -25,7 +25,7 @@ import spark.rdd.FlatMappedRDD
 import spark.rdd.GlommedRDD
 import spark.rdd.MappedRDD
 import spark.rdd.MapPartitionsRDD
-import spark.rdd.MapPartitionsWithSetupAndCleanup
+import spark.rdd.MapContextRDD
 import spark.rdd.MapPartitionsWithIndexRDD
 import spark.rdd.PipedRDD
 import spark.rdd.SampledRDD
@@ -36,7 +36,7 @@ import spark.rdd.ZippedRDD
 import spark.storage.StorageLevel
 
 import spark.SparkContext._
-import spark.RDD.PartitionMapper
+//import spark.PartitionContext
 
 /**
  * A Resilient Distributed Dataset (RDD), the basic abstraction in Spark. Represents an immutable,
@@ -435,9 +435,9 @@ abstract class RDD[T: ClassManifest](
    * a db connection
    */
   def mapWithSetup[U: ClassManifest](
-    m: PartitionMapper[T,U],
+    mapContext: MapContext[T,U],
     preservesPartitioning: Boolean = false): RDD[U] =
-      new MapPartitionsWithSetupAndCleanup(this, m, preservesPartitioning)
+      new MapContextRDD(this, mapContext, preservesPartitioning)
 
   /**
    * Zips this RDD with another one, returning key-value pairs with the first element in each RDD,
@@ -828,29 +828,4 @@ abstract class RDD[T: ClassManifest](
     id,
     origin)
 
-}
-
-object RDD {
-
-  /**
-   * Defines a map function over elements of an RDD, but with extra setup and cleanup
-   * that happens
-   */
-  trait PartitionMapper[T,U] extends Serializable {
-    /**
-     * called at the start of processing of each partition
-     */
-    def setup(partiton:Int)
-
-    /**
-     * transform one element of the partition
-     */
-    @throws(classOf[Exception]) //for the java api
-    def map(t: T) : U
-
-    /**
-     * called at the end of each partition.  This will get called even if the map failed (eg., an exception was thrown)
-     */
-    def cleanup
-  }
 }

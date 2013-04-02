@@ -10,7 +10,7 @@ import spark.api.java.function.{Function2 => JFunction2, Function => JFunction, 
 import spark.partial.{PartialResult, BoundedDouble}
 import spark.storage.StorageLevel
 import com.google.common.base.Optional
-import spark.RDD.PartitionMapper
+import spark.MapContext
 import spark.api.java.ManifestHelper.fakeManifest
 
 
@@ -123,7 +123,7 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends Serializable {
    * Return a new RDD by applying a function to each element of the RDD, with an additional
    * setup & cleanup that happens before & after computing each partition
    */
-  def mapWithSetup[U](m: PartitionMapper[T,U]): JavaRDD[U] = {
+  def mapWithSetup[U](m: MapContext[T,U]): JavaRDD[U] = {
     JavaRDD.fromRDD(rdd.mapWithSetup(m)(fakeManifest[U]))(fakeManifest[U])
   }
 
@@ -131,7 +131,7 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends Serializable {
    * Return a new RDD by applying a function to each element of the RDD, with an additional
    * setup & cleanup that happens before & after computing each partition
    */
-  def mapWithSetup[K,V](m: JavaPairPartitionMapper[T,K,V]): JavaPairRDD[K,V] = {
+  def mapWithSetup[K,V](m: JavaPairMapContext[T,K,V]): JavaPairRDD[K,V] = {
     JavaPairRDD.fromRDD(rdd.mapWithSetup(m)(fakeManifest[(K,V)]))(
       fakeManifest[K], fakeManifest[V])
   }
@@ -140,7 +140,7 @@ trait JavaRDDLike[T, This <: JavaRDDLike[T, This]] extends Serializable {
    * Return a new RDD by applying a function to each element of the RDD, with an additional
    * setup & cleanup that happens before & after computing each partition
    */
-  def mapWithSetup(m: JavaDoublePartitionMapper[T]): JavaDoubleRDD = {
+  def mapWithSetup(m: JavaDoubleMapContext[T]): JavaDoubleRDD = {
     JavaDoubleRDD.fromRDD(rdd.mapWithSetup(m)(manifest[java.lang.Double]).asInstanceOf[RDD[Double]])
   }
 
