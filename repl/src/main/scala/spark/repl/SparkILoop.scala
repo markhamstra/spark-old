@@ -223,7 +223,6 @@ class SparkILoop(in0: Option[BufferedReader], protected val out: JPrintWriter,
       case xs       => xs find (_.name == cmd)
     }
   }
-
   /** Show the history */
   lazy val historyCommand = new LoopCommand("history", "show the history (optional num is commands to show)") {
     override def usage = "[num]"
