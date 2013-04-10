@@ -523,14 +523,10 @@ abstract class RDD[T: ClassManifest](
       }
     }
     var jobResult: Option[T] = None
-    val mergeResult = (index: Int, taskResult: Option[T]) => {
-      if (taskResult != None) {
-        jobResult = jobResult match {
-          case Some(value) => Some(f(value, taskResult.get))
-          case None => taskResult
-        }
-      }
-    }
+    val mergeResult = (index: Int, taskResult: Option[T]) => 
+      taskResult.foreach{tr => jobResult = jobResult.foldLeft(taskResult){(optT, jr) => optT.map(_ => f(jr, tr))}}
+      // can simplify in scala-2.10 to: 
+      // taskResult.foreach{tr => jobResult = jobResult.fold(tr)(jr => f(jr, tr))}
     sc.runJob(this, reducePartition, mergeResult)
     // Get the final result out of our Option, or throw an exception if the RDD was empty
     jobResult.getOrElse(throw new UnsupportedOperationException("empty collection"))
