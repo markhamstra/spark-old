@@ -146,13 +146,8 @@ private[spark] class Worker(
       masterDisconnected()
 
     case RequestWorkerState => {
-<<<<<<< HEAD
-      sender ! WorkerState(ip, port, workerId, executors.values.toList,
-        finishedExecutors.values.toList, masterUrl, cores, memory,
-=======
       sender ! WorkerState(host, port, workerId, executors.values.toList,
         finishedExecutors.values.toList, masterUrl, cores, memory, 
->>>>>>> 118a6c76f56188edc72dba3f436587c124afc2ae
         coresUsed, memoryUsed, masterWebUiUrl)
     }
   }
