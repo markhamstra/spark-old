@@ -5,9 +5,8 @@ import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
 import akka.actor._
 import scala.concurrent.duration._
 import akka.pattern.ask
-import akka.util.Duration
 
-import spark.{SparkException, Logging, TaskState}
+import spark.{Utils, SparkException, Logging, TaskState}
 import scala.concurrent.Await
 import java.util.concurrent.atomic.AtomicInteger
 import akka.remote.{RemoteClientShutdown, RemoteClientDisconnected, RemoteClientLifeCycleEvent}

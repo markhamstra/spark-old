@@ -158,7 +158,9 @@ object SparkBuild extends Build {
       "io.spray" % "spray-io" % "1.1-M7",
       "io.spray" % "spray-routing" % "1.1-M7",
       "io.spray" %% "spray-json" % "1.2.3",
-      "org.apache.mesos" % "mesos" % "0.9.0-incubating"
+      "org.apache.mesos" % "mesos" % "0.9.0-incubating",
+      "org.scala-lang" % "jline" % "2.10.0",
+      "org.scala-lang" % "scala-reflect" % "2.10.0"
     ) ++ (
       if (HADOOP_MAJOR_VERSION == "2") {
         if (HADOOP_YARN) {
