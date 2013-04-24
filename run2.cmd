@@ -1,10 +1,6 @@
 @echo off
 
-<<<<<<< HEAD
 set SCALA_VERSION=2.10
-=======
-set SCALA_VERSION=2.9.3
->>>>>>> 054feb6448578de5542f9ef54d4cc88f706c22f5
 
 rem Figure out where the Spark framework is installed
 set FWDIR=%~dp0
