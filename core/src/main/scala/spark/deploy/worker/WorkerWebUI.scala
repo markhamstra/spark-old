@@ -24,10 +24,9 @@ class WorkerWebUI(worker: ActorRef, workDir: File)(implicit val context: ActorCo
   val actorSystem         = context.system
   val RESOURCE_DIR        = "spark/deploy/worker/webui"
   val STATIC_RESOURCE_DIR = "spark/deploy/static"
-
-
-  implicit val timeout = Timeout(10 seconds)
-
+  
+  implicit val timeout = Timeout(Duration.create(System.getProperty("spark.akka.askTimeout", "10").toLong, "seconds"))
+  
   val handler = {
     get {
       (path("")  & parameters('format ?)) {

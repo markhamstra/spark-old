@@ -279,6 +279,8 @@ private class BytesToString extends spark.api.java.function.Function[Array[Byte]
 class PythonAccumulatorParam(@transient serverHost: String, serverPort: Int)
   extends AccumulatorParam[JList[Array[Byte]]] {
 
+  Utils.checkHost(serverHost, "Expected hostname")
+
   override def zero(value: JList[Array[Byte]]): JList[Array[Byte]] = new JArrayList
 
   override def addInPlace(val1: JList[Array[Byte]], val2: JList[Array[Byte]])

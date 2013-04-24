@@ -19,7 +19,7 @@ class BlockManagerUI(val actorSystem: ActorSystem, blockManagerMaster: ActorRef,
 
   val STATIC_RESOURCE_DIR = "spark/deploy/static"
 
-  implicit val timeout = Timeout(10 seconds)
+  implicit val timeout = Duration.create(System.getProperty("spark.akka.askTimeout", "10").toLong, "seconds")
 
   /** Start a HTTP server to run the Web interface */
   def start() {

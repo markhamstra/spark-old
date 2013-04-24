@@ -31,7 +31,10 @@ private[spark] object AkkaUtils {
     val akkaBatchSize = System.getProperty("spark.akka.batchSize", "15").toInt
     val akkaTimeout   = System.getProperty("spark.akka.timeout", "20").toInt
     val akkaFrameSize = System.getProperty("spark.akka.frameSize", "10").toInt
-    val lifecycleEvents = System.getProperty("spark.akka.logLifecycleEvents", "false").toBoolean
+    val lifecycleEvents = if (System.getProperty("spark.akka.logLifecycleEvents", "false").toBoolean) "on" else "off"
+    // 10 seconds is the default akka timeout, but in a cluster, we need higher by default.
+    val akkaWriteTimeout = System.getProperty("spark.akka.writeTimeout", "30").toInt
+    
     val akkaConf = ConfigFactory.parseString("""
       akka.daemonic = on
       akka.event-handlers = ["akka.event.slf4j.Slf4jEventHandler"]
@@ -45,8 +48,9 @@ private[spark] object AkkaUtils {
       akka.remote.netty.execution-pool-size = %d
       akka.actor.default-dispatcher.throughput = %d
       akka.remote.log-remote-lifecycle-events = %s
+      akka.remote.netty.write-timeout = %ds
       """.format(host, port, akkaTimeout, akkaFrameSize, akkaThreads, akkaBatchSize,
-                 if (lifecycleEvents) "on" else "off"))
+        lifecycleEvents, akkaWriteTimeout))
 
     val actorSystem = ActorSystem(name, akkaConf, getClass.getClassLoader)
 
@@ -60,6 +64,7 @@ private[spark] object AkkaUtils {
   /**
    * Creates a Spray HTTP server bound to a given IP and port with a given Spray Route object to
    * handle requests. Returns the bound port or throws a SparkException on failure.
+   * TODO: Not changing ip to host here - is it required ?
    */
   def startSprayServer(actorSystem: ActorSystem, ip: String, port: Int, route: Route,
       name: String = "HttpServer"): ActorRef = {
