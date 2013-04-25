@@ -8,6 +8,7 @@ import akka.actor.ActorRef
 import akka.dispatch.Await
 import akka.pattern.ask
 import akka.util.duration._
+import akka.util.Duration
 
 import spark.{Logging, SparkException}
 
