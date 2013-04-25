@@ -20,7 +20,7 @@ import spark.SerializableWritable
  * a filename to write to, etc, exactly like in a Hadoop MapReduce job.
  */
 class HadoopWriter(@transient jobConf: JobConf) extends Logging with HadoopMapRedUtil with Serializable {
-  
+
   private val now = new Date()
   private val conf = new SerializableWritable(jobConf)
   
@@ -100,6 +100,12 @@ class HadoopWriter(@transient jobConf: JobConf) extends Logging with HadoopMapRe
     } else {
       logWarning ("No need to commit output of task: " + taID.value)
     }
+  }
+
+  def commitJob() {
+    // always ? Or if cmtr.needsTaskCommit ?
+    val cmtr = getOutputCommitter()
+    cmtr.commitJob(getJobContext())
   }
 
   def cleanup() {
