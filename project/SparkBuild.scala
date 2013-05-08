@@ -11,8 +11,9 @@ import twirl.sbt.TwirlPlugin._
 object SparkBuild extends Build {
   // Hadoop version to build against. For example, "0.20.2", "0.20.205.0", or
   // "1.0.4" for Apache releases, or "0.20.2-cdh3u5" for Cloudera Hadoop.
-  //val HADOOP_VERSION = "1.0.4"
-  //val HADOOP_MAJOR_VERSION = "1"
+  val HADOOP_VERSION = "1.0.4"
+  val HADOOP_MAJOR_VERSION = "1"
+  val HADOOP_YARN = false
 
   // For Hadoop 2 versions such as "2.0.0-mr1-cdh4.1.1", set the HADOOP_MAJOR_VERSION to "2"
   //val HADOOP_VERSION = "2.0.0-mr1-cdh4.1.1"
@@ -20,16 +21,15 @@ object SparkBuild extends Build {
   //val HADOOP_YARN = false
 
   // For Hadoop 2 YARN support
-  // val HADOOP_VERSION = "0.23.7"
-  val HADOOP_VERSION = "2.0.2-alpha"
-  val HADOOP_MAJOR_VERSION = "2"
-  val HADOOP_YARN = true
+  //val HADOOP_VERSION = "2.0.2-alpha"
+  //val HADOOP_MAJOR_VERSION = "2"
+  //val HADOOP_YARN = true
 
   lazy val root = Project("root", file("."), settings = rootSettings) aggregate(core, repl, examples, bagel, streaming)
 
   lazy val core = Project("core", file("core"), settings = coreSettings)
 
-  lazy val repl = Project("repl", file("repl"), settings = replSettings) dependsOn (core) dependsOn (streaming)
+  lazy val repl = Project("repl", file("repl"), settings = replSettings) dependsOn (core)
 
   lazy val examples = Project("examples", file("examples"), settings = examplesSettings) dependsOn (core) dependsOn (streaming)
 
@@ -129,6 +129,9 @@ object SparkBuild extends Build {
 
   val slf4jVersion = "1.6.1"
 
+  val excludeJackson = ExclusionRule(organization = "org.codehaus.jackson")
+  val excludeNetty = ExclusionRule(organization = "org.jboss.netty")
+
   def coreSettings = sharedSettings ++ Seq(
     name := "spark-core",
     resolvers ++= Seq(
@@ -149,33 +152,33 @@ object SparkBuild extends Build {
       "asm" % "asm-all" % "3.3.1",
       "com.google.protobuf" % "protobuf-java" % "2.4.1",
       "de.javakaffee" % "kryo-serializers" % "0.22",
-      "com.typesafe.akka" % "akka-actor" % "2.0.3",
-      "com.typesafe.akka" % "akka-remote" % "2.0.3",
-      "com.typesafe.akka" % "akka-slf4j" % "2.0.3",
+      "com.typesafe.akka" % "akka-actor" % "2.0.3" excludeAll(excludeNetty),
+      "com.typesafe.akka" % "akka-remote" % "2.0.3" excludeAll(excludeNetty),
+      "com.typesafe.akka" % "akka-slf4j" % "2.0.3" excludeAll(excludeNetty),
       "it.unimi.dsi" % "fastutil" % "6.4.4",
       "colt" % "colt" % "1.2.0",
-      "cc.spray" % "spray-can" % "1.0-M2.1",
-      "cc.spray" % "spray-server" % "1.0-M2.1",
-      "cc.spray" % "spray-json_2.9.2" % "1.1.1",
+      "cc.spray" % "spray-can" % "1.0-M2.1" excludeAll(excludeNetty),
+      "cc.spray" % "spray-server" % "1.0-M2.1" excludeAll(excludeNetty),
+      "cc.spray" % "spray-json_2.9.2" % "1.1.1" excludeAll(excludeNetty),
       "org.apache.mesos" % "mesos" % "0.9.0-incubating"
     ) ++ (
       if (HADOOP_MAJOR_VERSION == "2") {
         if (HADOOP_YARN) {
           Seq(
             // Exclude rule required for all ?
-            "org.apache.hadoop" % "hadoop-client" % HADOOP_VERSION excludeAll( ExclusionRule(organization = "org.codehaus.jackson") ),
-            "org.apache.hadoop" % "hadoop-yarn-api" % HADOOP_VERSION excludeAll( ExclusionRule(organization = "org.codehaus.jackson") ),
-            "org.apache.hadoop" % "hadoop-yarn-common" % HADOOP_VERSION excludeAll( ExclusionRule(organization = "org.codehaus.jackson") ),
-            "org.apache.hadoop" % "hadoop-yarn-client" % HADOOP_VERSION excludeAll( ExclusionRule(organization = "org.codehaus.jackson") )
+            "org.apache.hadoop" % "hadoop-client" % HADOOP_VERSION excludeAll(excludeJackson, excludeNetty),
+            "org.apache.hadoop" % "hadoop-yarn-api" % HADOOP_VERSION excludeAll(excludeJackson, excludeNetty),
+            "org.apache.hadoop" % "hadoop-yarn-common" % HADOOP_VERSION excludeAll(excludeJackson, excludeNetty),
+            "org.apache.hadoop" % "hadoop-yarn-client" % HADOOP_VERSION excludeAll(excludeJackson, excludeNetty)
           )
         } else {
           Seq(
-            "org.apache.hadoop" % "hadoop-core" % HADOOP_VERSION excludeAll( ExclusionRule(organization = "org.codehaus.jackson") ),
-            "org.apache.hadoop" % "hadoop-client" % HADOOP_VERSION excludeAll( ExclusionRule(organization = "org.codehaus.jackson") )
+            "org.apache.hadoop" % "hadoop-core" % HADOOP_VERSION excludeAll(excludeJackson, excludeNetty),
+            "org.apache.hadoop" % "hadoop-client" % HADOOP_VERSION excludeAll(excludeJackson, excludeNetty)
           )
         }
       } else {
-        Seq("org.apache.hadoop" % "hadoop-core" % HADOOP_VERSION excludeAll( ExclusionRule(organization = "org.codehaus.jackson") ) )
+        Seq("org.apache.hadoop" % "hadoop-core" % HADOOP_VERSION excludeAll(excludeJackson, excludeNetty) )
       }),
     unmanagedSourceDirectories in Compile <+= baseDirectory{ _ /
       ( if (HADOOP_YARN && HADOOP_MAJOR_VERSION == "2") {
@@ -197,7 +200,11 @@ object SparkBuild extends Build {
 
   def examplesSettings = sharedSettings ++ Seq(
     name := "spark-examples",
-    libraryDependencies ++= Seq("com.twitter" % "algebird-core_2.9.2" % "0.1.11")
+    resolvers ++= Seq("Apache HBase" at "https://repository.apache.org/content/repositories/releases"),
+    libraryDependencies ++= Seq(
+      "com.twitter" % "algebird-core_2.9.2" % "0.1.11",
+      "org.apache.hbase" % "hbase" % "0.94.6"
+    )
   )
 
   def bagelSettings = sharedSettings ++ Seq(name := "spark-bagel")
@@ -205,10 +212,10 @@ object SparkBuild extends Build {
   def streamingSettings = sharedSettings ++ Seq(
     name := "spark-streaming",
     libraryDependencies ++= Seq(
-      "org.apache.flume" % "flume-ng-sdk" % "1.2.0" % "compile",
+      "org.apache.flume" % "flume-ng-sdk" % "1.2.0" % "compile" excludeAll(excludeNetty),
       "com.github.sgroschupf" % "zkclient" % "0.1",
-      "org.twitter4j" % "twitter4j-stream" % "3.0.3",
-      "com.typesafe.akka" % "akka-zeromq" % "2.0.3"
+      "org.twitter4j" % "twitter4j-stream" % "3.0.3" excludeAll(excludeNetty),
+      "com.typesafe.akka" % "akka-zeromq" % "2.0.3" excludeAll(excludeNetty)
     )
   ) ++ assemblySettings ++ extraAssemblySettings
 

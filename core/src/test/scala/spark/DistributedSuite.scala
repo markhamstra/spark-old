@@ -3,7 +3,12 @@ package spark
 import network.ConnectionManagerId
 import org.scalatest.FunSuite
 import org.scalatest.BeforeAndAfter
+import org.scalatest.concurrent.Timeouts._
 import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.time.{Span, Millis}
+// import org.scalacheck.Arbitrary._
+// import org.scalacheck.Gen
+// import org.scalacheck.Prop._
 
 
 import SparkContext._
@@ -245,12 +250,35 @@ class DistributedSuite extends FunSuite with ShouldMatchers with BeforeAndAfter 
       assert(data2.count === 2)
     }
   }
+
+  test("unpersist RDDs") {
+    DistributedSuite.amMaster = true
+    sc = new SparkContext("local-cluster[3,1,512]", "test")
+    val data = sc.parallelize(Seq(true, false, false, false), 4)
+    data.persist(StorageLevel.MEMORY_ONLY_2)
+    data.count
+    assert(sc.persistentRdds.isEmpty === false)
+    data.unpersist()
+    assert(sc.persistentRdds.isEmpty === true)
+
+    failAfter(Span(3000, Millis)) {
+      try {
+        while (! sc.getRDDStorageInfo.isEmpty) {
+          Thread.sleep(200)
+        }
+      } catch {
+        case _ => { Thread.sleep(10) }
+          // Do nothing. We might see exceptions because block manager
+          // is racing this thread to remove entries from the driver.
+      }
+    }
+  }
 }
 
 object DistributedSuite {
   // Indicates whether this JVM is marked for failure.
   var mark = false
-  
+
   // Set by test to remember if we are in the driver program so we can assert
   // that we are not.
   var amMaster = false
@@ -267,9 +295,9 @@ object DistributedSuite {
   // Act like an identity function, but if mark was set to true previously, fail,
   // crashing the entire JVM.
   def failOnMarkedIdentity(item: Boolean): Boolean = {
-    if (mark) { 
+    if (mark) {
       System.exit(42)
-    } 
+    }
     item
-  } 
+  }
 }
