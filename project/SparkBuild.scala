@@ -142,7 +142,7 @@ object SparkBuild extends Build {
     ),
 
     libraryDependencies ++= Seq(
-      "io.netty" % "netty" % "3.5.3.Final",
+      "io.netty" % "netty" % "3.6.6.Final",
       "com.google.guava" % "guava" % "11.0.1",
       "log4j" % "log4j" % "1.2.16",
       "org.slf4j" % "slf4j-api" % slf4jVersion,
@@ -161,7 +161,7 @@ object SparkBuild extends Build {
       "cc.spray" % "spray-server" % "1.0-M2.1" excludeAll(excludeNetty),
       "cc.spray" % "spray-json_2.9.2" % "1.1.1" excludeAll(excludeNetty),
       "org.apache.mesos" % "mesos" % "0.9.0-incubating",
-      "io.netty" % "netty-all" % "4.0.0.Beta2",
+      "io.netty" % "netty-all" % "4.0.0.CR1",
       "org.apache.derby" % "derby" % "10.4.2.0" % "test"
     ) ++ (
       if (HADOOP_MAJOR_VERSION == "2") {
