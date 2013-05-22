@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.spark-project</groupId>
   <artifactId>spark-parent</artifactId>
-  <version>0.8.0-candidate-csd-2-SNAPSHOT</version>
+  <version>0.8.0-candidate-csd-2</version>
   <packaging>pom</packaging>
   <name>Spark Project Parent POM</name>
   <url>http://spark-project.org/</url>
@@ -456,7 +456,7 @@
             <junitxml>.</junitxml>
             <filereports>${project.build.directory}/SparkTestSuite.txt</filereports>
             <argLine>-Xms64m -Xmx1024m</argLine>
-            <stderr/>
+            <stderr />
           </configuration>
           <executions>
             <execution>
