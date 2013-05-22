@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.spark-project</groupId>
     <artifactId>spark-parent</artifactId>
-    <version>0.8.0-candidate-csd-2</version>
+    <version>0.8.0-candidate-csd-3-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
