@@ -635,13 +635,14 @@ abstract class RDD[T: ClassManifest](
    */
   def aggregate[U: ClassManifest](zeroValue: U)(seqOp: (U, T) => U, combOp: (U, U) => U): U = {
     // Clone the zero value since we will also be serializing it as part of tasks
-    var jobResult = Utils.clone(zeroValue, sc.env.closureSerializer.newInstance())
+    var jobResult = Utils.clone(Option.empty[U], sc.env.closureSerializer.newInstance())
     val cleanSeqOp = sc.clean(seqOp)
     val cleanCombOp = sc.clean(combOp)
-    val aggregatePartition = (it: Iterator[T]) => it.aggregate(zeroValue)(cleanSeqOp, cleanCombOp)
-    val mergeResult = (index: Int, taskResult: U) => jobResult = combOp(jobResult, taskResult)
+    def optCombOp(a: Option[U], b: Option[U]): Option[U] = for (u <- b) yield a.fold(u)(cleanCombOp(_, _)) 
+    val aggregatePartition = (it: Iterator[T]) => Option(it.aggregate(zeroValue)(cleanSeqOp, cleanCombOp))
+    val mergeResult = (index: Int, taskResult: Option[U]) => jobResult = optCombOp(jobResult, taskResult)
     sc.runJob(this, aggregatePartition, mergeResult)
-    jobResult
+    jobResult.get
   }
 
   /**
