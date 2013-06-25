@@ -637,8 +637,12 @@ abstract class RDD[T: ClassManifest](
     var jobResult = Option.empty[U]
     val cleanSeqOp = sc.clean(seqOp)
     val cleanCombOp = sc.clean(combOp)
-    def optCombOp(a: Option[U], b: Option[U]): Option[U] = 
-      for (u <- b) yield a.fold(u)((u1, u2) => combOp(u2, u1))
+    def optCombOp(a: Option[U], b: Option[U]): Option[U] = (a, b) match {
+      case (None, None) => Option(zeroValue)
+      case (None, _) => b
+      case (Some(u1), Some(u2)) => Option(combOp(u1, u2))
+      case (_, _) => throw new SparkException("Have a jobResult but no taskResult in aggregate()")
+    }
     val aggregatePartition = 
       (it: Iterator[T]) => Option(it.aggregate(zeroValue)(cleanSeqOp, cleanCombOp))
     val mergeResult = 
