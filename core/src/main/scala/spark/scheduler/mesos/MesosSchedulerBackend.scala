@@ -135,6 +135,8 @@ private[spark] class MesosSchedulerBackend(
   override def disconnected(d: SchedulerDriver) {}
 
   override def reregistered(d: SchedulerDriver, masterInfo: MasterInfo) {}
+  
+  def killTask(taskId: Long, executorId: String): Unit = {}
 
   /**
    * Method called by Mesos to offer resources on slaves. We resond by asking our active task sets

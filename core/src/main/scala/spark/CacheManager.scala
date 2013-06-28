@@ -19,7 +19,8 @@ private[spark] class CacheManager(blockManager: BlockManager) extends Logging {
       case Some(cachedValues) =>
         // Partition is in cache, so just return its values
         logInfo("Found partition in cache!")
-        return cachedValues.asInstanceOf[Iterator[T]]
+        val iter = cachedValues.asInstanceOf[Iterator[T]]
+        return new InterruptibleIteratorDecorator(iter)
 
       case None =>
         // Mark the split as loading (unless someone else marks it first)
@@ -37,7 +38,8 @@ private[spark] class CacheManager(blockManager: BlockManager) extends Logging {
             // downside of the current code is that threads wait serially if this does happen.
             blockManager.get(key) match {
               case Some(values) =>
-                return values.asInstanceOf[Iterator[T]]
+                val iter =  values.asInstanceOf[Iterator[T]]
+                return new InterruptibleIteratorDecorator(iter)
               case None =>
                 logInfo("Whoever was loading " + key + " failed; we'll try it ourselves")
                 loading.add(key)
@@ -53,7 +55,8 @@ private[spark] class CacheManager(blockManager: BlockManager) extends Logging {
           elements ++= rdd.computeOrReadCheckpoint(split, context)
           // Try to put this block in the blockManager
           blockManager.put(key, elements, storageLevel, true)
-          return elements.iterator.asInstanceOf[Iterator[T]]
+            val iter = elements.iterator.asInstanceOf[Iterator[T]]
+          return new InterruptibleIteratorDecorator(iter)
         } finally {
           loading.synchronized {
             loading.remove(key)

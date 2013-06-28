@@ -10,6 +10,7 @@ private[spark] sealed trait StandaloneClusterMessage extends Serializable
 // Driver to executors
 private[spark]
 case class LaunchTask(task: TaskDescription) extends StandaloneClusterMessage
+case class KillTask(taskId: Long, executorId: String) extends StandaloneClusterMessage
 
 private[spark]
 case class RegisteredExecutor(sparkProperties: Seq[(String, String)])

@@ -77,7 +77,7 @@ private[spark] class ResultTask[T, U](
     preferredLocs.foreach (hostPort => Utils.checkHost(Utils.parseHostPort(hostPort)._1, "preferredLocs : " + preferredLocs))
   }
 
-  override def run(attemptId: Long): U = {
+  override def runInterruptibly(attemptId: Long): U = {
     val context = new TaskContext(stageId, partition, attemptId)
     metrics = Some(context.taskMetrics)
     try {

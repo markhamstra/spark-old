@@ -48,6 +48,7 @@ class DAGSchedulerSuite extends FunSuite with BeforeAndAfter with LocalSparkCont
     }
     override def setListener(listener: TaskSchedulerListener) = {}
     override def defaultParallelism() = 2
+    override def killTasks(stageId: Int) = {}
   }
 
   var mapOutputTracker: MapOutputTracker = null

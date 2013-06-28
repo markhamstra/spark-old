@@ -130,6 +130,8 @@ private[spark] class CoarseMesosSchedulerBackend(
   override def disconnected(d: SchedulerDriver) {}
 
   override def reregistered(d: SchedulerDriver, masterInfo: MasterInfo) {}
+  
+  override def killTask(taskId: Long, executorId: String) {}
 
   /**
    * Method called by Mesos to offer resources on slaves. We respond by launching an executor,

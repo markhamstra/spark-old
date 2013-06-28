@@ -19,6 +19,8 @@ private[spark] trait TaskScheduler {
 
   // Submit a sequence of tasks to run.
   def submitTasks(taskSet: TaskSet): Unit
+  
+  def killTasks(stageId: Int): Unit
 
   // Set a listener for upcalls. This is guaranteed to be set before submitTasks is called.
   def setListener(listener: TaskSchedulerListener): Unit

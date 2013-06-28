@@ -100,6 +100,15 @@ private[spark] class LocalScheduler(threads: Int, val maxFailures: Int, val sc: 
       localActor ! LocalReviveOffers
     }
   }
+  
+  override def killTasks(stageId: Int) {
+    synchronized {
+      schedulableBuilder.popTaskSetManagers(stageId).foreach {
+        _.asInstanceOf[TaskSetManager].taskSet.kill()
+      }
+      
+    }
+  }
 
   def resourceOffer(freeCores: Int): Seq[TaskDescription] = {
     synchronized {

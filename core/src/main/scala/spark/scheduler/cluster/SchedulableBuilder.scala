@@ -22,6 +22,7 @@ import java.util.Properties
 private[spark] trait SchedulableBuilder {
   def buildPools()
   def addTaskSetManager(manager: Schedulable, properties: Properties)
+  def popTaskSetManagers(stageId: Int): Iterable[Schedulable]
 }
 
 private[spark] class FIFOSchedulableBuilder(val rootPool: Pool) extends SchedulableBuilder with Logging {
@@ -32,6 +33,16 @@ private[spark] class FIFOSchedulableBuilder(val rootPool: Pool) extends Schedula
 
   override def addTaskSetManager(manager: Schedulable, properties: Properties) {
     rootPool.addSchedulable(manager)
+  }
+  
+  override def popTaskSetManagers(stageId: Int) = {
+    val s = rootPool.schedulableNameToSchedulable.values.filter {
+      _.stageId == stageId
+    }
+    s.foreach {
+      rootPool.removeSchedulable(_)
+    }
+    s
   }
 }
 
@@ -111,5 +122,15 @@ private[spark] class FairSchedulableBuilder(val rootPool: Pool) extends Schedula
     }
     parentPool.addSchedulable(manager)
     logInfo("Added task set " + manager.name + " tasks to pool "+poolName)
+  }
+  
+  override def popTaskSetManagers(stageId: Int) = {
+    val s = rootPool.schedulableNameToSchedulable.values.filter {
+      _.stageId == stageId
+    }
+    s.foreach {
+      rootPool.removeSchedulable(_)
+    }
+    s
   }
 }

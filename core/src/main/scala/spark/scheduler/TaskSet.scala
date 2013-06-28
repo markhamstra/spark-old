@@ -15,4 +15,10 @@ private[spark] class TaskSet(
     val id: String = stageId + "." + attempt
 
   override def toString: String = "TaskSet " + id
+  
+  def kill() = {
+    tasks.foreach {
+      _.kill()
+    }
+  }
 }

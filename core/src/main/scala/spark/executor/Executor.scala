@@ -2,16 +2,16 @@ package spark.executor
 
 import java.io.{File, FileOutputStream}
 import java.net.{URI, URL, URLClassLoader}
+import java.nio.ByteBuffer
 import java.util.concurrent._
-
+import scala.collection.JavaConversions._
+import scala.collection.mutable.{ArrayBuffer,ConcurrentMap, HashMap, Map}
+import scala.concurrent.JavaConversions._
 import org.apache.hadoop.fs.FileUtil
-
-import scala.collection.mutable.{ArrayBuffer, Map, HashMap}
-
 import spark.broadcast._
 import spark.scheduler._
 import spark._
-import java.nio.ByteBuffer
+import spark.scheduler.cluster.TaskDescription
 
 /**
  * The Mesos executor for Spark.
@@ -79,14 +79,26 @@ private[spark] class Executor(executorId: String, slaveHostname: String, propert
   val threadPool = new ThreadPoolExecutor(
     1, 128, 600, TimeUnit.SECONDS, new SynchronousQueue[Runnable])
 
+  val tasks: ConcurrentMap[Long, FutureTask[_]] = new ConcurrentHashMap[Long, FutureTask[_]]()
   def launchTask(context: ExecutorBackend, taskId: Long, serializedTask: ByteBuffer) {
-    threadPool.execute(new TaskRunner(context, taskId, serializedTask))
+    val runner = new TaskRunner(context, taskId, serializedTask)
+    val task = threadPool.submit(runner).asInstanceOf[FutureTask[_]]
+    tasks.put(taskId, task)
+    
+  }
+
+  def killTask(context: ExecutorBackend, taskId: Long, executorId: String) {
+    val task = tasks.get(taskId)
+    task match {
+      case Some(t) => t.cancel(true)
+      case None => 
+    }
   }
 
   class TaskRunner(context: ExecutorBackend, taskId: Long, serializedTask: ByteBuffer)
     extends Runnable {
 
-    override def run() {
+    override def run(): Unit = {
       val startTime = System.currentTimeMillis()
       SparkEnv.set(env)
       Thread.currentThread.setContextClassLoader(replClassLoader)
@@ -138,6 +150,8 @@ private[spark] class Executor(executorId: String, slaveHostname: String, propert
           logError("Exception in task ID " + taskId, t)
           //System.exit(1)
         }
+      } finally {
+        tasks.remove(taskId)
       }
     }
   }

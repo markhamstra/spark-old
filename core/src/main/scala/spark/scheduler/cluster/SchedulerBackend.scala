@@ -10,6 +10,7 @@ import spark.Utils
 private[spark] trait SchedulerBackend {
   def start(): Unit
   def stop(): Unit
+  def killTask(taskId: Long, executorId: String): Unit
   def reviveOffers(): Unit
   def defaultParallelism(): Int
 
@@ -22,6 +23,4 @@ private[spark] trait SchedulerBackend {
       .getOrElse(512)
   }
 
-
-  // TODO: Probably want to add a killTask too
 }
