@@ -18,7 +18,7 @@ class CancellationSuite extends FunSuite with BeforeAndAfter {
           super.run(attemptId)
         } catch {
         	//check if interrupted exception is thrown
-        	case e: InterruptedException => latch.countDown()
+        	case e: Exception => latch.countDown()
         }
         0
       }
@@ -68,7 +68,7 @@ class CancellationSuite extends FunSuite with BeforeAndAfter {
     try {
       f.get()
     } catch {
-      case e: InterruptedException => {
+      case e: Exception => {
         innerLatch.await(1, TimeUnit.SECONDS)
       }
     } finally {
