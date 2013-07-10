@@ -619,6 +619,10 @@ class SparkContext(
     }
   }
 
+  def killJob(jobId: Int, reason: String="") {
+    dagScheduler.killJob(jobId, reason)
+  }
+
   /**
    * Run a function on a given set of partitions in an RDD and pass the results to the given
    * handler function. This is the main entry point for all actions in Spark. The allowLocal

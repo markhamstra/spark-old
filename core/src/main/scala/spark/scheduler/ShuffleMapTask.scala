@@ -98,6 +98,11 @@ private[spark] class ShuffleMapTask(
     rdd.partitions(partition)
   }
 
+  override def kill() {
+    logDebug("Killing Task %s %s".format(rdd.id, partition))
+    super.kill()
+  }
+
   override def writeExternal(out: ObjectOutput) {
     RDDCheckpointData.synchronized {
       split = rdd.partitions(partition)
@@ -124,7 +129,7 @@ private[spark] class ShuffleMapTask(
     split = in.readObject().asInstanceOf[Partition]
   }
 
-  override def run(attemptId: Long): MapStatus = {
+  override def runInterruptibly(attemptId: Long): MapStatus = {
     val numOutputSplits = dep.partitioner.numPartitions
 
     val taskContext = new TaskContext(stageId, partition, attemptId)
@@ -133,7 +138,6 @@ private[spark] class ShuffleMapTask(
     val blockManager = SparkEnv.get.blockManager
     var shuffle: ShuffleBlocks = null
     var buckets: ShuffleWriterGroup = null
-
     try {
       // Obtain all the block writers for shuffle blocks.
       val ser = SparkEnv.get.serializerManager.get(dep.serializerClass)

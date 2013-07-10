@@ -66,6 +66,10 @@ class StandaloneSchedulerBackend(scheduler: ClusterScheduler, actorSystem: Actor
       case ReviveOffers =>
         makeOffers()
 
+      case KillTask(taskId, executorId) =>
+        freeCores(executorId) += 1
+        executorActor(executorId) ! KillTask(taskId, executorId)
+
       case StopDriver =>
         sender ! true
         context.stop(self)
@@ -103,6 +107,7 @@ class StandaloneSchedulerBackend(scheduler: ClusterScheduler, actorSystem: Actor
         executorActor(task.executorId) ! LaunchTask(task)
       }
     }
+
 
     // Remove a disconnected slave from the cluster
     def removeExecutor(executorId: String, reason: String) {
@@ -154,6 +159,10 @@ class StandaloneSchedulerBackend(scheduler: ClusterScheduler, actorSystem: Actor
 
   override def reviveOffers() {
     driverActor ! ReviveOffers
+  }
+
+  def killTask(taskId: Long, executorId: String): Unit = {
+    driverActor ! KillTask(taskId, executorId)
   }
 
   override def defaultParallelism() = Option(System.getProperty("spark.default.parallelism"))

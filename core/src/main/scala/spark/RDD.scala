@@ -81,7 +81,12 @@ abstract class RDD[T: ClassManifest](
   // =======================================================================
 
   /** Implemented by subclasses to compute a given partition. */
-  def compute(split: Partition, context: TaskContext): Iterator[T]
+  protected def compute(split: Partition, context: TaskContext): Iterator[T]
+  
+  def computeInterruptibly(split: Partition, context: TaskContext): Iterator[T]	= {
+    val iter = compute(split, context)
+    new InterruptibleIteratorDecorator(iter)
+  }
 
   /**
    * Implemented by subclasses to return the set of partitions in this RDD. This method will only
@@ -232,7 +237,7 @@ abstract class RDD[T: ClassManifest](
     if (isCheckpointed) {
       firstParent[T].iterator(split, context)
     } else {
-      compute(split, context)
+      computeInterruptibly(split, context)
     }
   }
 

@@ -83,9 +83,10 @@ class DummyTaskSetManager(
 
 class DummyTask(stageId: Int) extends Task[Int](stageId)
 {
-  def run(attemptId: Long): Int = {
+  def runInterruptibly(attemptId: Long): Int = {
     return 0
   }
+  
 }
 
 class ClusterSchedulerSuite extends FunSuite with LocalSparkContext with Logging {

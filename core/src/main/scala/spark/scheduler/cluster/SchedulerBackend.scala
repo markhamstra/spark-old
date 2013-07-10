@@ -10,11 +10,10 @@ import spark.{SparkContext, Utils}
 private[spark] trait SchedulerBackend {
   def start(): Unit
   def stop(): Unit
+  def killTask(taskId: Long, executorId: String): Unit
   def reviveOffers(): Unit
   def defaultParallelism(): Int
 
   // Memory used by each executor (in megabytes)
   protected val executorMemory: Int = SparkContext.executorMemoryRequested
-
-  // TODO: Probably want to add a killTask too
 }

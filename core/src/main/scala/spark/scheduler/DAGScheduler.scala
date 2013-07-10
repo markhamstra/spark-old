@@ -278,6 +278,41 @@ class DAGScheduler(
     return listener.awaitResult()    // Will throw an exception if the job fails
   }
 
+  def killJob(jobId: Int, reason: String)
+  {
+    logInfo("Killing Job %s".format(jobId))
+    val j = activeJobs.find(j => j.runId.equals(jobId))
+    j match {
+      case Some(job) => killJob(job, reason)
+      case None => Unit
+    }
+  }
+
+  private def killJob(job: ActiveJob, reason: String) {
+    logInfo("Killing Job and cleaning up stages %s".format(job.runId))
+    activeJobs.remove(job)
+    idToActiveJob.remove(job.runId)
+    val stage = job.finalStage
+    resultStageToJob.remove(stage)
+    killStage(stage)
+    // recursively remove all parent stages
+    stage.parents.foreach(p => killStage(p))
+    job.listener.jobFailed(new SparkException("Job failed: " + reason))
+  }
+
+  private def killStage(stage: Stage) {
+    logInfo("Killing Stage %s".format(stage.id))
+    idToStage.remove(stage.id)
+    if (stage.isShuffleMap) {
+      shuffleToMapStage.remove(stage.id)
+    }
+    waiting.remove(stage)
+    pendingTasks.remove(stage)
+    running.remove(stage)
+    taskSched.killTasks(stage.id)
+    stage.parents.foreach(p => killStage(p))
+  }
+
   /**
    * Process one event retrieved from the event queue.
    * Returns true if we should stop the event loop.
@@ -495,7 +530,11 @@ class DAGScheduler(
    */
   private def handleTaskCompletion(event: CompletionEvent) {
     val task = event.task
-    val stage = idToStage(task.stageId)
+    val stageId = task.stageId
+    if (!idToStage.contains(stageId)) {
+      return;
+    }
+    val stage = idToStage(stageId)
 
     def markStageAsFinished(stage: Stage) = {
       val serviceTime = stage.submissionTime match {

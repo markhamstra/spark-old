@@ -1,7 +1,9 @@
 package spark.util
 
+import spark.InterruptibleIterator
+
 /** Provides a basic/boilerplate Iterator implementation. */
-private[spark] abstract class NextIterator[U] extends Iterator[U] {
+private[spark] abstract class NextIterator[U] extends InterruptibleIterator[U] {
   
   private var gotNext = false
   private var nextValue: U = _
@@ -49,6 +51,14 @@ private[spark] abstract class NextIterator[U] extends Iterator[U] {
   }
 
   override def hasNext: Boolean = {
+    try {
+      super.hasNext
+    } catch {
+      case e: Exception => {
+        closeIfNeeded
+        throw e;
+      }
+    }
     if (!finished) {
       if (!gotNext) {
         nextValue = getNext()
