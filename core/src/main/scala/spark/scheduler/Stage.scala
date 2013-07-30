@@ -41,7 +41,7 @@ private[spark] class Stage(
     val rdd: RDD[_],
     val shuffleDep: Option[ShuffleDependency[_,_]],  // Output shuffle if stage is a map stage
     val parents: List[Stage],
-    val priority: Int,
+    val priority: Int,  // immutable?
     callSite: Option[String])
   extends Logging {
 

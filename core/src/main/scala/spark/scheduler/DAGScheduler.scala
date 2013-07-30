@@ -161,7 +161,11 @@ class DAGScheduler(
    */
   private def getShuffleMapStage(shuffleDep: ShuffleDependency[_,_], priority: Int): Stage = {
     shuffleToMapStage.get(shuffleDep.shuffleId) match {
-      case Some(stage) => stage
+      case Some(stage) => stage  // increment ref count
+                                 // ?? With the fair scheduler, can the incoming priority now be smaller
+                                 // (more urgent) than the current priority of the dependency?  If so,
+                                 // then the priority of the existing stage needs to be reduced to less
+                                 // than that of the incoming priority.
       case None =>
         val stage = newStage(shuffleDep.rdd, Some(shuffleDep), priority)
         shuffleToMapStage(shuffleDep.shuffleId) = stage
@@ -177,7 +181,7 @@ class DAGScheduler(
   private def newStage(
       rdd: RDD[_],
       shuffleDep: Option[ShuffleDependency[_,_]],
-      priority: Int,
+      priority: Int, // add separate jobId parameter
       callSite: Option[String] = None)
     : Stage =
   {
@@ -188,7 +192,7 @@ class DAGScheduler(
       mapOutputTracker.registerShuffle(shuffleDep.get.shuffleId, rdd.partitions.size)
     }
     val id = nextStageId.getAndIncrement()
-    val stage = new Stage(id, rdd, shuffleDep, getParentStages(rdd, priority), priority, callSite)
+    val stage = new Stage(id, rdd, shuffleDep, getParentStages(rdd, priority), priority, callSite) // add jobId to jobSet
     idToStage(id) = stage
     stageToInfos(stage) = StageInfo(stage)
     stage
@@ -446,7 +450,11 @@ class DAGScheduler(
    * We run the operation in a separate thread just in case it takes a bunch of time, so that we
    * don't block the DAGScheduler event loop or other concurrent jobs.
    */
-  protected def runLocally(job: ActiveJob) {
+  protected def runLocally(job: ActiveJob) { // must decrement ref count of job.finalStage
+                                             // ?? what happens when another job depends on
+                                             // the results of a locally run job?  Can't happen,
+                                             // right?  Because the finalStage must be an action,
+                                             // not a ShuffleMap.
     logInfo("Computing the requested partition locally")
     new Thread("Local computation of job " + job.runId) {
       override def run() {
@@ -475,7 +483,7 @@ class DAGScheduler(
   }
 
   /** Submits stage, but first recursively submits any missing parents. */
-  private def submitStage(stage: Stage) {
+  private def submitStage(stage: Stage) {  // Not tailrec.  Priority adjustment?
     logDebug("submitStage(" + stage + ")")
     if (!waiting(stage) && !running(stage) && !failed(stage)) {
       val missing = getMissingParentStages(stage).sortBy(_.id)
@@ -516,7 +524,9 @@ class DAGScheduler(
     }
     // must be run listener before possible NotSerializableException
     // should be "StageSubmitted" first and then "JobEnded"
-    val properties = idToActiveJob(stage.priority).properties
+    val properties = idToActiveJob(stage.priority).properties  // Bad news!  Stage priority is not the same thing
+                                                                 // as a Job ID.  In fact, a Stage can be associated
+                                                                 // with more than one ActiveJob
     listenerBus.post(SparkListenerStageSubmitted(stage, tasks.size, properties))
     
     if (tasks.size > 0) {
@@ -583,7 +593,7 @@ class DAGScheduler(
                   job.numFinished += 1
                   // If the whole job has finished, remove it
                   if (job.numFinished == job.numPartitions) {
-                    idToActiveJob -= stage.priority
+                    idToActiveJob -= stage.priority    // Bad news again!
                     activeJobs -= job
                     resultStageToJob -= stage
                     markStageAsFinished(stage)
@@ -735,7 +745,7 @@ class DAGScheduler(
       val error = new SparkException("Job failed: " + reason)
       job.listener.jobFailed(error)
       listenerBus.post(SparkListenerJobEnd(job, JobFailed(error, Some(failedStage))))
-      idToActiveJob -= resultStage.priority
+      idToActiveJob -= resultStage.priority    // More bad news!
       activeJobs -= job
       resultStageToJob -= resultStage
     }

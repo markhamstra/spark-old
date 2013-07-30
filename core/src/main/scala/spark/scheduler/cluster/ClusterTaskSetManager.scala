@@ -108,8 +108,9 @@ private[spark] class ClusterTaskSetManager(sched: ClusterScheduler, val taskSet:
   var runningTasks = 0
   var priority = taskSet.priority
   var stageId = taskSet.stageId
-  var name = "TaskSet_"+taskSet.stageId.toString
-  var parent: Schedulable = null
+  var name = "TaskSet_" + taskSet.stageId.toString
+  var parent: Option[Schedulable] = None
+
   // Last time when we launched a preferred task (for delay scheduling)
   var lastPreferredLaunchTime = System.currentTimeMillis
 
@@ -686,22 +687,18 @@ private[spark] class ClusterTaskSetManager(sched: ClusterScheduler, val taskSet:
 
   override def increaseRunningTasks(taskNum: Int) {
     runningTasks += taskNum
-    if (parent != null) {
-      parent.increaseRunningTasks(taskNum)
-    }
+    parent.foreach(_.increaseRunningTasks(taskNum))
   }
 
   override def decreaseRunningTasks(taskNum: Int) {
     runningTasks -= taskNum
-    if (parent != null) {
-      parent.decreaseRunningTasks(taskNum)
-    }
+    parent.foreach(_.decreaseRunningTasks(taskNum))
   }
 
   // TODO(xiajunluan): for now we just find Pool not TaskSetManager
   // we can extend this function in future if needed
-  override def getSchedulableByName(name: String): Schedulable = {
-    return null
+  override def getSchedulableByName(name: String): Option[Schedulable] = {
+    None
   }
 
   override def addSchedulable(schedulable:Schedulable) {

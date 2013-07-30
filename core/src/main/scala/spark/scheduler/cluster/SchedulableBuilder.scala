@@ -72,7 +72,7 @@ private[spark] class FairSchedulableBuilder(val rootPool: Pool)
     val file = new File(schedulerAllocFile)
     if (file.exists()) {
       val xml = XML.loadFile(file)
-      for (poolNode <- (xml \\ POOLS_PROPERTY)) {
+      for (poolNode <- xml \\ POOLS_PROPERTY) {
 
         val poolName = (poolNode \ POOL_NAME_PROPERTY).text
         var schedulingMode = DEFAULT_SCHEDULING_MODE
@@ -99,39 +99,38 @@ private[spark] class FairSchedulableBuilder(val rootPool: Pool)
         }
 
         val pool = new Pool(poolName, schedulingMode, minShare, weight)
-        rootPool.addSchedulable(pool)
-        logInfo("Create new pool with name:%s,schedulingMode:%s,minShare:%d,weight:%d".format(
-          poolName, schedulingMode, minShare, weight))
+        addToRootPool(pool, "new")
       }
     }
 
-    // finally create "default" pool
-    if (rootPool.getSchedulableByName(DEFAULT_POOL_NAME) == null) {
-      val pool = new Pool(DEFAULT_POOL_NAME, DEFAULT_SCHEDULING_MODE,
-        DEFAULT_MINIMUM_SHARE, DEFAULT_WEIGHT)
-      rootPool.addSchedulable(pool)
-      logInfo("Create default pool with name:%s,schedulingMode:%s,minShare:%d,weight:%d".format(
-        DEFAULT_POOL_NAME, DEFAULT_SCHEDULING_MODE, DEFAULT_MINIMUM_SHARE, DEFAULT_WEIGHT))
+    //finally create "default" pool
+    if (!rootPool.getSchedulableByName(DEFAULT_POOL_NAME).isDefined) {
+      val pool = new Pool(DEFAULT_POOL_NAME, DEFAULT_SCHEDULING_MODE, DEFAULT_MINIMUM_SHARE, DEFAULT_WEIGHT)
+      addToRootPool(pool, "default")
     }
   }
 
   override def addTaskSetManager(manager: Schedulable, properties: Properties) {
     var poolName = DEFAULT_POOL_NAME
-    var parentPool = rootPool.getSchedulableByName(poolName)
+    var parentPool: Option[Schedulable] = rootPool.getSchedulableByName(poolName)
     if (properties != null) {
       poolName = properties.getProperty(FAIR_SCHEDULER_PROPERTIES, DEFAULT_POOL_NAME)
       parentPool = rootPool.getSchedulableByName(poolName)
-      if (parentPool == null) {
-        // we will create a new pool that user has configured in app
-        // instead of being defined in xml file
-        parentPool = new Pool(poolName, DEFAULT_SCHEDULING_MODE,
-          DEFAULT_MINIMUM_SHARE, DEFAULT_WEIGHT)
-        rootPool.addSchedulable(parentPool)
-        logInfo("Create pool with name:%s,schedulingMode:%s,minShare:%d,weight:%d".format(
-          poolName, DEFAULT_SCHEDULING_MODE, DEFAULT_MINIMUM_SHARE, DEFAULT_WEIGHT))
+      if (!parentPool.isDefined) {
+        //we will create a new pool that user has configured in app instead of being defined in xml file
+        val pool = new Pool(poolName,DEFAULT_SCHEDULING_MODE, DEFAULT_MINIMUM_SHARE, DEFAULT_WEIGHT)
+        parentPool = Some(pool)
+        addToRootPool(pool)
       }
     }
-    parentPool.addSchedulable(manager)
+    parentPool.getOrElse(throw new IllegalArgumentException("No parent pool")).addSchedulable(manager)
     logInfo("Added task set " + manager.name + " tasks to pool "+poolName)
+  }
+
+  private def addToRootPool(pool: Pool, logModifier: String = " ") {
+    rootPool.addSchedulable(pool)
+    val modifier = if (logModifier == " ") logModifier else " " + logModifier + " "
+    logInfo("Create%spool with name: %s, schedulingMode: %s, minShare: %s, weight: %d".format(modifier, pool.poolName,
+      pool.schedulingMode, pool.minShare, pool.weight))
   }
 }

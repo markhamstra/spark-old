@@ -222,8 +222,9 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
   def taskSetFinished(manager: TaskSetManager) {
     this.synchronized {
       activeTaskSets -= manager.taskSet.id
-      manager.parent.removeSchedulable(manager)
-      logInfo("Remove TaskSet %s from pool %s".format(manager.taskSet.id, manager.parent.name))
+      manager.parent.getOrElse(throw new NoSuchElementException("No TaskSetManager parent")).
+        removeSchedulable(manager)
+      logInfo("Remove TaskSet %s from pool %s".format(manager.taskSet.id, manager.parent.get.name))
       taskIdToTaskSetId --= taskSetTaskIds(manager.taskSet.id)
       taskIdToExecutorId --= taskSetTaskIds(manager.taskSet.id)
       taskSetTaskIds.remove(manager.taskSet.id)
@@ -272,11 +273,12 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
         map
       }
       var launchedTask = false
-      val sortedTaskSetQueue = rootPool.getSortedTaskSetQueue()
-
-      for (manager <- sortedTaskSetQueue) {
-        logDebug("parentName:%s, name:%s, runningTasks:%s".format(
-          manager.parent.name, manager.name, manager.runningTasks))
+      val sortedTaskSetQueue = rootPool.getSortedTaskSetQueue
+      for (manager <- sortedTaskSetQueue)
+      {
+        logInfo("parentName:%s,name:%s,runningTasks:%s".
+          format(manager.parent.getOrElse(throw new NoSuchElementException("No TaskSetManager parent")),
+                 manager.name, manager.runningTasks))
       }
 
       for (manager <- sortedTaskSetQueue) {
@@ -495,7 +497,7 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
   def checkSpeculatableTasks() {
     var shouldRevive = false
     synchronized {
-      shouldRevive = rootPool.checkSpeculatableTasks()
+      shouldRevive = rootPool.checkSpeculatableTasks
     }
     if (shouldRevive) {
       backend.reviveOffers()
@@ -505,7 +507,7 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
   // Check for pending tasks in all our active jobs.
   def hasPendingTasks(): Boolean = {
     synchronized {
-      rootPool.hasPendingTasks()
+      rootPool.hasPendingTasks
     }
   }
 

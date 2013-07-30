@@ -59,30 +59,23 @@ class DummyTaskSetManager(
     }
   }
 
-  override def addSchedulable(schedulable: Schedulable) {
-  }
+  override def addSchedulable(schedulable: Schedulable) {}
 
-  override def removeSchedulable(schedulable: Schedulable) {
-  }
+  override def removeSchedulable(schedulable: Schedulable) {}
 
-  override def getSchedulableByName(name: String): Schedulable = {
-    return null
-  }
+  override def getSchedulableByName(name: String): Option[Schedulable] = None
 
-  override def executorLost(executorId: String, host: String): Unit = {
-  }
+  override def executorLost(executorId: String, host: String): Unit = {}
 
-  override def slaveOffer(execId: String, host: String, avaiableCpus: Double, overrideLocality: TaskLocality.TaskLocality = null): Option[TaskDescription] = {
+  override def slaveOffer(execId: String, host: String, avaiableCpus: Double,
+                 overrideLocality: TaskLocality.TaskLocality = null): Option[TaskDescription] = {
     if (tasksFinished + runningTasks < numTasks) {
       increaseRunningTasks(1)
-      return Some(new TaskDescription(0, execId, "task 0:0", null))
-    }
-    return None
+      Some(new TaskDescription(0, execId, "task 0:0", null))
+    } else None
   }
 
-  override def checkSpeculatableTasks(): Boolean = {
-    return true
-  }
+  override def checkSpeculatableTasks(): Boolean = true
 
   def taskFinished() {
     decreaseRunningTasks(1)
@@ -98,33 +91,27 @@ class DummyTaskSetManager(
   }
 }
 
-class DummyTask(stageId: Int) extends Task[Int](stageId)
-{
-  def run(attemptId: Long): Int = {
-    return 0
-  }
+class DummyTask(stageId: Int) extends Task[Int](stageId) {
+  def run(attemptId: Long): Int = 0
 }
 
 class ClusterSchedulerSuite extends FunSuite with LocalSparkContext with Logging {
 
-  def createDummyTaskSetManager(priority: Int, stage: Int, numTasks: Int, cs: ClusterScheduler, taskSet: TaskSet): DummyTaskSetManager = {
+  def createDummyTaskSetManager(priority: Int, stage: Int, numTasks: Int, cs: ClusterScheduler,
+                                taskSet: TaskSet): DummyTaskSetManager = {
     new DummyTaskSetManager(priority, stage, numTasks, cs , taskSet)
   }
 
   def resourceOffer(rootPool: Pool): Int = {
     val taskSetQueue = rootPool.getSortedTaskSetQueue()
     /* Just for Test*/
-    for (manager <- taskSetQueue) {
-       logInfo("parentName:%s, parent running tasks:%d, name:%s,runningTasks:%d".format(manager.parent.name, manager.parent.runningTasks, manager.name, manager.runningTasks))
-    }
-    for (taskSet <- taskSetQueue) {
-      taskSet.slaveOffer("execId_1", "hostname_1", 1) match {
-        case Some(task) =>
-          return taskSet.stageId
-        case None => {}
-      }
-    }
-    -1
+    taskSetQueue.foreach(manager =>
+       logInfo("parentName:%s, parent running tasks:%d, name:%s,runningTasks:%d".
+         format(manager.parent.name, manager.parent.runningTasks, manager.name, manager.runningTasks)))
+
+    val tsm: Option[TaskSetManager] =
+      taskSetQueue.find(tsm => tsm.slaveOffer("execId_1", "hostname_1", 1).isDefined)
+    if (tsm.isDefined) tsm.get.stageId else -1
   }
 
   def checkTaskSetId(rootPool: Pool, expectedTaskSetId: Int) {
@@ -172,16 +159,16 @@ class ClusterSchedulerSuite extends FunSuite with LocalSparkContext with Logging
     val schedulableBuilder = new FairSchedulableBuilder(rootPool)
     schedulableBuilder.buildPools()
 
-    assert(rootPool.getSchedulableByName("default") != null)
-    assert(rootPool.getSchedulableByName("1") != null)
-    assert(rootPool.getSchedulableByName("2") != null)
-    assert(rootPool.getSchedulableByName("3") != null)
-    assert(rootPool.getSchedulableByName("1").minShare === 2)
-    assert(rootPool.getSchedulableByName("1").weight === 1)
-    assert(rootPool.getSchedulableByName("2").minShare === 3)
-    assert(rootPool.getSchedulableByName("2").weight === 1)
-    assert(rootPool.getSchedulableByName("3").minShare === 2)
-    assert(rootPool.getSchedulableByName("3").weight === 1)
+    assert(rootPool.getSchedulableByName("default").isDefined)
+    assert(rootPool.getSchedulableByName("1").isDefined)
+    assert(rootPool.getSchedulableByName("2").isDefined)
+    assert(rootPool.getSchedulableByName("3").isDefined)
+    assert(rootPool.getSchedulableByName("1").get.minShare === 2)
+    assert(rootPool.getSchedulableByName("1").get.weight === 1)
+    assert(rootPool.getSchedulableByName("2").get.minShare === 3)
+    assert(rootPool.getSchedulableByName("2").get.weight === 1)
+    assert(rootPool.getSchedulableByName("3").get.minShare === 2)
+    assert(rootPool.getSchedulableByName("3").get.weight === 1)
 
     val properties1 = new Properties()
     properties1.setProperty("spark.scheduler.cluster.fair.pool","1")
@@ -210,9 +197,9 @@ class ClusterSchedulerSuite extends FunSuite with LocalSparkContext with Logging
     checkTaskSetId(rootPool, 4)
 
     taskSetManager12.taskFinished()
-    assert(rootPool.getSchedulableByName("1").runningTasks === 3)
+    assert(rootPool.getSchedulableByName("1").get.runningTasks === 3)
     taskSetManager24.abort()
-    assert(rootPool.getSchedulableByName("2").runningTasks === 2)
+    assert(rootPool.getSchedulableByName("2").get.runningTasks === 2)
   }
 
   test("Nested Pool Test") {

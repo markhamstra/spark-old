@@ -30,7 +30,7 @@ import spark.scheduler.cluster.{Schedulable, TaskDescription, TaskInfo, TaskLoca
 private[spark] class LocalTaskSetManager(sched: LocalScheduler, val taskSet: TaskSet)
   extends TaskSetManager with Logging {
 
-  var parent: Schedulable = null
+  var parent: Option[Schedulable] = None
   var weight: Int = 1
   var minShare: Int = 0
   var runningTasks: Int = 0
@@ -51,52 +51,32 @@ private[spark] class LocalTaskSetManager(sched: LocalScheduler, val taskSet: Tas
 
   override def increaseRunningTasks(taskNum: Int): Unit = {
     runningTasks += taskNum
-    if (parent != null) {
-     parent.increaseRunningTasks(taskNum)
-    }
+    parent.foreach(_.increaseRunningTasks(taskNum))
   }
 
   override def decreaseRunningTasks(taskNum: Int): Unit = {
     runningTasks -= taskNum
-    if (parent != null) {
-      parent.decreaseRunningTasks(taskNum)
-    }
+    parent.foreach(_.decreaseRunningTasks(taskNum))
   }
 
-  override def addSchedulable(schedulable: Schedulable): Unit = {
-    // nothing
-  }
+  override def addSchedulable(schedulable: Schedulable): Unit = {}
 
-  override def removeSchedulable(schedulable: Schedulable): Unit = {
-    // nothing
-  }
+  override def removeSchedulable(schedulable: Schedulable): Unit = {}
 
-  override def getSchedulableByName(name: String): Schedulable = {
-    return null
-  }
+  override def getSchedulableByName(name: String): Option[Schedulable] = None
 
-  override def executorLost(executorId: String, host: String): Unit = {
-    // nothing
-  }
+  override def executorLost(executorId: String, host: String): Unit = {}
 
-  override def checkSpeculatableTasks() = true
+  override def checkSpeculatableTasks = true
 
-  override def getSortedTaskSetQueue(): ArrayBuffer[TaskSetManager] = {
+  override def getSortedTaskSetQueue: ArrayBuffer[TaskSetManager] = {
     var sortedTaskSetQueue = new ArrayBuffer[TaskSetManager]
     sortedTaskSetQueue += this
-    return sortedTaskSetQueue
   }
 
-  override def hasPendingTasks() = true
+  override def hasPendingTasks = true
 
-  def findTask(): Option[Int] = {
-    for (i <- 0 to numTasks-1) {
-      if (copiesRunning(i) == 0 && !finished(i)) {
-        return Some(i)
-      }
-    }
-    return None
-  }
+  def findTask(): Option[Int] = (0 until numTasks).find(i => copiesRunning(i) == 0 && !finished(i))
 
   override def slaveOffer(
       execId: String,

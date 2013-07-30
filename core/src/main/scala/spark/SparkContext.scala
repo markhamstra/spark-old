@@ -268,9 +268,7 @@ class SparkContext(
   }
 
   def addLocalProperty(key: String, value: String) {
-    if(localProperties.value == null) {
-      localProperties.value = new Properties()
-    }
+    if(localProperties.value == null) initLocalProperties()
     localProperties.value.setProperty(key,value)
   }
 

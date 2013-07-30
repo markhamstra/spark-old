@@ -128,10 +128,11 @@ private[spark] class LocalScheduler(threads: Int, val maxFailures: Int, val sc: 
     synchronized {
       var freeCpuCores = freeCores
       val tasks = new ArrayBuffer[TaskDescription](freeCores)
-      val sortedTaskSetQueue = rootPool.getSortedTaskSetQueue()
+      val sortedTaskSetQueue = rootPool.getSortedTaskSetQueue
       for (manager <- sortedTaskSetQueue) {
         logDebug("parentName:%s,name:%s,runningTasks:%s".format(
-          manager.parent.name, manager.name, manager.runningTasks))
+          manager.parent.getOrElse(throw new NoSuchElementException("TaskSetManager no parent")),
+          manager.name, manager.runningTasks))
       }
 
       var launchTask = false
@@ -156,8 +157,9 @@ private[spark] class LocalScheduler(threads: Int, val maxFailures: Int, val sc: 
   def taskSetFinished(manager: TaskSetManager) {
     synchronized {
       activeTaskSets -= manager.taskSet.id
-      manager.parent.removeSchedulable(manager)
-      logInfo("Remove TaskSet %s from pool %s".format(manager.taskSet.id, manager.parent.name))
+      manager.parent.
+        getOrElse(throw new NoSuchElementException("TaskSetManager no parent")).removeSchedulable(manager)
+      logInfo("Remove TaskSet %s from pool %s".format(manager.taskSet.id, manager.parent.get.name))
       taskIdToTaskSetId --= taskSetTaskIds(manager.taskSet.id)
       taskSetTaskIds -= manager.taskSet.id
     }

@@ -45,21 +45,19 @@ private[spark] class Pool(
   var priority = 0
   var stageId = 0
   var name = poolName
-  var parent:Schedulable = null
+  var parent: Option[Schedulable] = None
 
   var taskSetSchedulingAlgorithm: SchedulingAlgorithm = {
     schedulingMode match {
-      case SchedulingMode.FAIR =>
-        new FairSchedulingAlgorithm()
-      case SchedulingMode.FIFO =>
-        new FIFOSchedulingAlgorithm()
+      case SchedulingMode.FAIR => new FairSchedulingAlgorithm()
+      case SchedulingMode.FIFO => new FIFOSchedulingAlgorithm()
     }
   }
 
   override def addSchedulable(schedulable: Schedulable) {
     schedulableQueue += schedulable
     schedulableNameToSchedulable(schedulable.name) = schedulable
-    schedulable.parent= this
+    schedulable.parent = Some(this)
   }
 
   override def removeSchedulable(schedulable: Schedulable) {
@@ -67,55 +65,42 @@ private[spark] class Pool(
     schedulableNameToSchedulable -= schedulable.name
   }
 
-  override def getSchedulableByName(schedulableName: String): Schedulable = {
-    if (schedulableNameToSchedulable.contains(schedulableName)) {
-      return schedulableNameToSchedulable(schedulableName)
-    }
-    for (schedulable <- schedulableQueue) {
-      var sched = schedulable.getSchedulableByName(schedulableName)
-      if (sched != null) {
-        return sched
-      }
-    }
-    return null
+  override def getSchedulableByName(schedulableName: String): Option[Schedulable] = {
+    if (schedulableNameToSchedulable.contains(schedulableName))
+      Some(schedulableNameToSchedulable(schedulableName))
+    else schedulableQueue.find(_.getSchedulableByName(schedulableName).isDefined)
   }
 
   override def executorLost(executorId: String, host: String) {
     schedulableQueue.foreach(_.executorLost(executorId, host))
   }
 
-  override def checkSpeculatableTasks(): Boolean = {
+  override def checkSpeculatableTasks: Boolean = {
     var shouldRevive = false
     for (schedulable <- schedulableQueue) {
-      shouldRevive |= schedulable.checkSpeculatableTasks()
+      shouldRevive |= schedulable.checkSpeculatableTasks
     }
-    return shouldRevive
+    shouldRevive
   }
 
-  override def getSortedTaskSetQueue(): ArrayBuffer[TaskSetManager] = {
+  override def getSortedTaskSetQueue: ArrayBuffer[TaskSetManager] = {
     var sortedTaskSetQueue = new ArrayBuffer[TaskSetManager]
     val sortedSchedulableQueue = schedulableQueue.sortWith(taskSetSchedulingAlgorithm.comparator)
     for (schedulable <- sortedSchedulableQueue) {
-      sortedTaskSetQueue ++= schedulable.getSortedTaskSetQueue()
+      sortedTaskSetQueue ++= schedulable.getSortedTaskSetQueue
     }
-    return sortedTaskSetQueue
+    sortedTaskSetQueue
   }
 
   override def increaseRunningTasks(taskNum: Int) {
     runningTasks += taskNum
-    if (parent != null) {
-      parent.increaseRunningTasks(taskNum)
-    }
+    parent.foreach(_.increaseRunningTasks(taskNum))
   }
 
   override def decreaseRunningTasks(taskNum: Int) {
     runningTasks -= taskNum
-    if (parent != null) {
-      parent.decreaseRunningTasks(taskNum)
-    }
+    parent.foreach(_.decreaseRunningTasks(taskNum))
   }
 
-  override def hasPendingTasks(): Boolean = {
-    schedulableQueue.exists(_.hasPendingTasks())
-  }
+  override def hasPendingTasks: Boolean = schedulableQueue.exists(_.hasPendingTasks)
 }
