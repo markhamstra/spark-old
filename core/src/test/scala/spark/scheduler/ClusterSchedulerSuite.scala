@@ -35,7 +35,7 @@ class DummyTaskSetManager(
     taskSet: TaskSet)
   extends ClusterTaskSetManager(clusterScheduler, taskSet) {
 
-  parent = null
+  parent = None
   weight = 1
   minShare = 2
   runningTasks = 0
@@ -47,16 +47,12 @@ class DummyTaskSetManager(
 
   override def increaseRunningTasks(taskNum: Int) {
     runningTasks += taskNum
-    if (parent != null) {
-      parent.increaseRunningTasks(taskNum)
-    }
+    parent.foreach(_.increaseRunningTasks(taskNum))
   }
 
   override def decreaseRunningTasks(taskNum: Int) {
     runningTasks -= taskNum
-    if (parent != null) {
-      parent.decreaseRunningTasks(taskNum)
-    }
+    parent.foreach(_.decreaseRunningTasks(taskNum))
   }
 
   override def addSchedulable(schedulable: Schedulable) {}
@@ -81,13 +77,13 @@ class DummyTaskSetManager(
     decreaseRunningTasks(1)
     tasksFinished +=1
     if (tasksFinished == numTasks) {
-      parent.removeSchedulable(this)
+      parent.get.removeSchedulable(this)
     }
   }
 
   def abort() {
     decreaseRunningTasks(runningTasks)
-    parent.removeSchedulable(this)
+    parent.get.removeSchedulable(this)
   }
 }
 
@@ -103,11 +99,11 @@ class ClusterSchedulerSuite extends FunSuite with LocalSparkContext with Logging
   }
 
   def resourceOffer(rootPool: Pool): Int = {
-    val taskSetQueue = rootPool.getSortedTaskSetQueue()
+    val taskSetQueue = rootPool.getSortedTaskSetQueue
     /* Just for Test*/
     taskSetQueue.foreach(manager =>
        logInfo("parentName:%s, parent running tasks:%d, name:%s,runningTasks:%d".
-         format(manager.parent.name, manager.parent.runningTasks, manager.name, manager.runningTasks)))
+         format(manager.parent.get.name, manager.parent.get.runningTasks, manager.name, manager.runningTasks)))
 
     val tsm: Option[TaskSetManager] =
       taskSetQueue.find(tsm => tsm.slaveOffer("execId_1", "hostname_1", 1).isDefined)
