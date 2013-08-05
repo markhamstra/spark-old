@@ -401,7 +401,7 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
       if (tasks.size > 0) {
         hasLaunchedTask = true
       }
-      return tasks
+      tasks
     }
   }
 
@@ -563,12 +563,7 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
   def getExecutorsAliveOnHost(host: String): Option[Set[String]] = {
     Utils.checkHost(host)
 
-    val retval = hostToAliveHostPorts.get(host)
-    if (retval.isDefined) {
-      return Some(retval.get.toSet)
-    }
-
-    None
+    hostToAliveHostPorts.get(host).map{_.toSet}
   }
 
   def isExecutorAliveOnHostPort(hostPort: String): Boolean = {
