@@ -150,7 +150,7 @@ private[spark] class LocalScheduler(threads: Int, val maxFailures: Int, val sc: 
           }
         } while(launchTask)
       }
-      return tasks
+      tasks
     }
   }
 

@@ -76,52 +76,42 @@ private[spark] class LocalTaskSetManager(sched: LocalScheduler, val taskSet: Tas
 
   override def hasPendingTasks = true
 
-  def findTask(): Option[Int] = (0 until numTasks).find(i => copiesRunning(i) == 0 && !finished(i))
+  def findTask: Option[Int] = (0 until numTasks).find(i => copiesRunning(i) == 0 && !finished(i))
 
   override def slaveOffer(
       execId: String,
       hostPort: String,
       availableCpus: Double,
-      overrideLocality: TaskLocality.TaskLocality = null): Option[TaskDescription] =
-  {
+      overrideLocality: TaskLocality.TaskLocality = null): Option[TaskDescription] = {
     SparkEnv.set(sched.env)
     logDebug("availableCpus:%d,numFinished:%d,numTasks:%d".format(
       availableCpus.toInt, numFinished, numTasks))
     if (availableCpus > 0 && numFinished < numTasks) {
-      findTask() match {
-        case Some(index) =>
-          val taskId = sched.attemptId.getAndIncrement()
-          val task = taskSet.tasks(index)
-          val info = new TaskInfo(taskId, index, System.currentTimeMillis(), "local", "local:1",
-            TaskLocality.NODE_LOCAL)
-          taskInfos(taskId) = info
-          // We rely on the DAGScheduler to catch non-serializable closures and RDDs, so in here
-          // we assume the task can be serialized without exceptions.
-          val bytes = Task.serializeWithDependencies(
-            task, sched.sc.addedFiles, sched.sc.addedJars, ser)
-          logInfo("Size of task " + taskId + " is " + bytes.limit + " bytes")
-          val taskName = "task %s:%d".format(taskSet.id, index)
-          copiesRunning(index) += 1
-          increaseRunningTasks(1)
-          taskStarted(task, info)
-          return Some(new TaskDescription(taskId, null, taskName, bytes))
-        case None => {}
+      findTask.map { index =>
+        val taskId = sched.attemptId.getAndIncrement()
+        val task = taskSet.tasks(index)
+        val info = new TaskInfo(taskId, index, System.currentTimeMillis(), "local", "local:1",
+          TaskLocality.NODE_LOCAL)
+        taskInfos(taskId) = info
+        // We rely on the DAGScheduler to catch non-serializable closures and RDDs, so in here
+        // we assume the task can be serialized without exceptions.
+        val bytes = Task.serializeWithDependencies(
+          task, sched.sc.addedFiles, sched.sc.addedJars, ser)
+        logInfo("Size of task " + taskId + " is " + bytes.limit + " bytes")
+        val taskName = "task %s:%d".format(taskSet.id, index)
+        copiesRunning(index) += 1
+        increaseRunningTasks(1)
+        taskStarted(task, info)
+        new TaskDescription(taskId, null, taskName, bytes)
       }
-    }
-    return None
+    } else None
   }
 
-  override def numPendingTasksForHostPort(hostPort: String): Int = {
-    return 0
-  }
+  override def numPendingTasksForHostPort(hostPort: String): Int = 0
 
-  override def numRackLocalPendingTasksForHost(hostPort :String): Int = {
-    return 0
-  }
+  override def numRackLocalPendingTasksForHost(hostPort :String): Int = 0
 
-  override def numPendingTasksForHost(hostPort: String): Int = {
-    return 0
-  }
+  override def numPendingTasksForHost(hostPort: String): Int = 0
 
   override def statusUpdate(tid: Long, state: TaskState, serializedData: ByteBuffer) {
     SparkEnv.set(env)
@@ -130,7 +120,7 @@ private[spark] class LocalTaskSetManager(sched: LocalScheduler, val taskSet: Tas
         taskEnded(tid, state, serializedData)
       case TaskState.FAILED =>
         taskFailed(tid, state, serializedData)
-      case _ => {}
+      case _ =>
     }
   }
 
@@ -180,6 +170,5 @@ private[spark] class LocalTaskSetManager(sched: LocalScheduler, val taskSet: Tas
     }
   }
 
-  override def error(message: String) {
-  }
+  override def error(message: String) {}
 }
