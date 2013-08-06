@@ -595,7 +595,7 @@ class SparkContext(
    * Return the pool associated with the given name, if one exists
    */
   def getPoolForName(pool: String): Option[Schedulable] = {
-    taskScheduler.rootPool.schedulableNameToSchedulable.get(pool)
+    taskScheduler.rootPool.nameToSchedulable.get(pool)
   }
 
   /**

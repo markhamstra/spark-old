@@ -24,7 +24,7 @@ import spark.Logging
 import spark.scheduler.cluster.SchedulingMode.SchedulingMode
 
 /**
- * An Schedulable entity that represent collection of Pools or TaskSetManagers
+ * A Schedulable collection of Pools and TaskSetManagers
  */
 
 private[spark] class Pool(
@@ -36,7 +36,7 @@ private[spark] class Pool(
   with Logging {
 
   var schedulableQueue = new ArrayBuffer[Schedulable]
-  var schedulableNameToSchedulable = new HashMap[String, Schedulable]
+  var nameToSchedulable = new HashMap[String, Schedulable]
 
   var weight = initWeight
   var minShare = initMinShare
@@ -56,19 +56,18 @@ private[spark] class Pool(
 
   override def addSchedulable(schedulable: Schedulable) {
     schedulableQueue += schedulable
-    schedulableNameToSchedulable(schedulable.name) = schedulable
+    nameToSchedulable(schedulable.name) = schedulable
     schedulable.parent = Some(this)
   }
 
   override def removeSchedulable(schedulable: Schedulable) {
     schedulableQueue -= schedulable
-    schedulableNameToSchedulable -= schedulable.name
+    nameToSchedulable -= schedulable.name
   }
 
-  override def getSchedulableByName(schedulableName: String): Option[Schedulable] = {
-    if (schedulableNameToSchedulable.contains(schedulableName))
-      Some(schedulableNameToSchedulable(schedulableName))
-    else schedulableQueue.find(_.getSchedulableByName(schedulableName).isDefined)
+  override def getSchedulableByName(name: String): Option[Schedulable] = {
+    if (nameToSchedulable.contains(name)) Some(nameToSchedulable(name))
+    else schedulableQueue.find(_.getSchedulableByName(name).isDefined)
   }
 
   override def executorLost(executorId: String, host: String) {
