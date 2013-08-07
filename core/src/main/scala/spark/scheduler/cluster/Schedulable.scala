@@ -45,4 +45,8 @@ private[spark] trait Schedulable {
   def checkSpeculatableTasks: Boolean
   def getSortedTaskSetQueue: ArrayBuffer[TaskSetManager]
   def hasPendingTasks: Boolean
+
+  def isNeedy = runningTasks < minShare
+  def minShareRatio = runningTasks / math.max(minShare, 1.0)
+  def taskToWeightRatio = runningTasks / weight.toDouble
 }
