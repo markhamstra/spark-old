@@ -201,7 +201,7 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
       schedulableBuilder.addTaskSetManager(manager, manager.taskSet.properties)
       taskSetTaskIds(taskSet.id) = new HashSet[Long]()
 
-      if (hasReceivedTask == false) {
+      if (!hasReceivedTask) {
         starvationTimer.scheduleAtFixedRate(new TimerTask() {
           override def run() {
             if (!hasLaunchedTask) {
@@ -214,7 +214,7 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
           }
         }, STARVATION_TIMEOUT, STARVATION_TIMEOUT)
       }
-      hasReceivedTask = true;
+      hasReceivedTask = true
     }
     backend.reviveOffers()
   }
