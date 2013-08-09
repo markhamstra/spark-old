@@ -85,7 +85,7 @@ private[spark] class JobProgressListener(val sc: SparkContext) extends SparkList
     val description = Option(stageSubmitted.properties).flatMap {
       p => Option(p.getProperty(SparkContext.SPARK_JOB_DESCRIPTION))
     }
-    description.map(d => stageToDescription(stage) = d)
+    description.foreach(d => stageToDescription(stage) = d)
 
     val stages = poolToActiveStages.getOrElseUpdate(poolName, new HashSet[Stage]())
     stages += stage
