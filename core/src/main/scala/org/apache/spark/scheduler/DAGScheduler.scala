@@ -109,6 +109,10 @@ class DAGScheduler(
 
   val nextStageId = new AtomicInteger(0)
 
+  val jobIdToStageIds = new TimeStampedHashMap[Int, HashSet[Int]]
+
+  val stageIdToJobIds = new TimeStampedHashMap[Int, HashSet[Int]]
+
   val stageIdToStage = new TimeStampedHashMap[Int, Stage]
 
   val shuffleToMapStage = new TimeStampedHashMap[Int, Stage]
@@ -206,6 +210,7 @@ class DAGScheduler(
     val id = nextStageId.getAndIncrement()
     val stage = new Stage(id, rdd, shuffleDep, getParentStages(rdd, jobId), jobId, callSite)
     stageIdToStage(id) = stage
+    registerJobIdWithStages(jobId, stage)
     stageToInfos(stage) = StageInfo(stage)
     stage
   }
@@ -259,6 +264,58 @@ class DAGScheduler(
     }
     visit(stage.rdd)
     missing.toList
+  }
+
+  private def registerJobIdWithStages(jobId: Int, stage: Stage) {
+    def registerJobIdWithStageList(stages: List[Stage]) {
+      if (!stages.isEmpty) {
+        val s = stages.head
+        stageIdToJobIds.getOrElseUpdate(s.id, new HashSet[Int]()) += jobId
+        val parents = getParentStages(s.rdd, jobId)
+        val parentsWithoutThisJobId = parents.filter(p => !stageIdToJobIds.get(p.id).exists(_.contains(jobId)))
+        registerJobIdWithStageList(parentsWithoutThisJobId ++ stages.tail)
+      }
+    }
+    registerJobIdWithStageList(List(stage))
+  }
+
+  private def jobIdToStageIdsAdd(jobId: Int) {
+    val stageSet = jobIdToStageIds.getOrElseUpdate(jobId, new HashSet[Int]())
+    stageIdToJobIds.foreach{case (stageId, jobSet) =>
+      if (jobSet.contains(jobId)) {
+        stageSet += stageId
+      }
+    }
+  }
+
+  private def jobIdToStageIdsRemove(jobId: Int) {
+    if (!jobIdToStageIds.contains(jobId))
+      logError("Trying to remove unregistered job " + jobId)
+    else {
+      val registeredStages = jobIdToStageIds(jobId)
+      if (registeredStages.isEmpty)
+        logError("No stages registered for job " + jobId)
+      else stageIdToJobIds.filterKeys(stageId => registeredStages.contains(stageId)).foreach {
+        case (stageId, jobSet) => {
+          if (!jobSet.contains(jobId))
+            logError("Job %d not registered for stage %d even though that stage was registered for the job"
+              .format(jobId, stageId))
+          else
+            jobSet -= jobId
+          if (jobSet.isEmpty) {
+            stageIdToStage.get(stageId).foreach{s =>
+              pendingTasks -= s
+              waiting -= s
+              running -= s
+              failed -= s
+            }
+            stageIdToStage -= stageId
+            logDebug("After removal of stage %d, remaining stages = %d".format(stageId, stageIdToStage.size))
+          }
+        }
+      }
+      jobIdToStageIds -= jobId
+    }
   }
 
   /**
@@ -354,10 +411,11 @@ class DAGScheduler(
           // Compute very short actions like first() or take() with no parent stages locally.
           runLocally(job)
         } else {
-          listenerBus.post(SparkListenerJobStart(job, properties))
           idToActiveJob(jobId) = job
           activeJobs += job
           resultStageToJob(finalStage) = job
+          jobIdToStageIdsAdd(jobId)
+          listenerBus.post(SparkListenerJobStart(job, jobIdToStageIds(jobId).toArray, properties))
           submitStage(finalStage)
         }
 
@@ -605,6 +663,7 @@ class DAGScheduler(
                     resultStageToJob -= stage
                     markStageAsFinished(stage)
                     listenerBus.post(SparkListenerJobEnd(job, JobSucceeded))
+                    jobIdToStageIdsRemove(job.jobId)
                   }
                   job.listener.taskSucceeded(rt.outputId, event.result)
                 }
@@ -752,6 +811,7 @@ class DAGScheduler(
       val error = new SparkException("Job failed: " + reason)
       job.listener.jobFailed(error)
       listenerBus.post(SparkListenerJobEnd(job, JobFailed(error, Some(failedStage))))
+      jobIdToStageIdsRemove(job.jobId)
       idToActiveJob -= resultStage.jobId
       activeJobs -= job
       resultStageToJob -= resultStage
