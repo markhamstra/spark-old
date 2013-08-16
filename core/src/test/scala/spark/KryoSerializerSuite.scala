@@ -1,14 +1,30 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package spark
 
 import scala.collection.mutable
-import scala.collection.immutable
 
 import org.scalatest.FunSuite
 import com.esotericsoftware.kryo._
 
-import SparkContext._
+import KryoTest._
 
-class KryoSerializerSuite extends FunSuite {
+class KryoSerializerSuite extends FunSuite with SharedSparkContext {
   test("basic types") {
     val ser = (new KryoSerializer).newInstance()
     def check[T](t: T) {
@@ -36,6 +52,7 @@ class KryoSerializerSuite extends FunSuite {
     check(Array(true, false, true))
     check(Array('a', 'b', 'c'))
     check(Array[Int]())
+    check(Array(Array("1", "2"), Array("1", "2", "3", "4")))
   }
 
   test("pairs") {
@@ -86,7 +103,7 @@ class KryoSerializerSuite extends FunSuite {
   }
 
   test("custom registrator") {
-    import spark.test._
+    import KryoTest._
     System.setProperty("spark.kryo.registrator", classOf[MyRegistrator].getName)
 
     val ser = (new KryoSerializer).newInstance()
@@ -106,14 +123,65 @@ class KryoSerializerSuite extends FunSuite {
     val hashMap = new java.util.HashMap[String, String]
     hashMap.put("foo", "bar")
     check(hashMap)
-    
+
     System.clearProperty("spark.kryo.registrator")
+  }
+
+  test("kryo with collect") {
+    val control = 1 :: 2 :: Nil
+    val result = sc.parallelize(control, 2).map(new ClassWithoutNoArgConstructor(_)).collect().map(_.x)
+    assert(control === result.toSeq)
+  }
+
+  test("kryo with parallelize") {
+    val control = 1 :: 2 :: Nil
+    val result = sc.parallelize(control.map(new ClassWithoutNoArgConstructor(_))).map(_.x).collect()
+    assert (control === result.toSeq)
+  }
+
+  test("kryo with parallelize for specialized tuples") {
+    assert (sc.parallelize( Array((1, 11), (2, 22), (3, 33)) ).count === 3)
+  }
+
+  test("kryo with parallelize for primitive arrays") {
+    assert (sc.parallelize( Array(1, 2, 3) ).count === 3)
+  }
+
+  test("kryo with collect for specialized tuples") {
+    assert (sc.parallelize( Array((1, 11), (2, 22), (3, 33)) ).collect().head === (1, 11))
+  }
+
+  test("kryo with reduce") {
+    val control = 1 :: 2 :: Nil
+    val result = sc.parallelize(control, 2).map(new ClassWithoutNoArgConstructor(_))
+        .reduce((t1, t2) => new ClassWithoutNoArgConstructor(t1.x + t2.x)).x
+    assert(control.sum === result)
+  }
+
+  // TODO: this still doesn't work
+  ignore("kryo with fold") {
+    val control = 1 :: 2 :: Nil
+    val result = sc.parallelize(control, 2).map(new ClassWithoutNoArgConstructor(_))
+        .fold(new ClassWithoutNoArgConstructor(10))((t1, t2) => new ClassWithoutNoArgConstructor(t1.x + t2.x)).x
+    assert(10 + control.sum === result)
+  }
+
+  override def beforeAll() {
+    System.setProperty("spark.serializer", "spark.KryoSerializer")
+    System.setProperty("spark.kryo.registrator", classOf[MyRegistrator].getName)
+    super.beforeAll()
+  }
+
+  override def afterAll() {
+    super.afterAll()
+    System.clearProperty("spark.kryo.registrator")
+    System.clearProperty("spark.serializer")
   }
 }
 
-package test {
+object KryoTest {
   case class CaseClass(i: Int, s: String) {}
-  
+
   class ClassWithNoArgConstructor {
     var x: Int = 0
     override def equals(other: Any) = other match {

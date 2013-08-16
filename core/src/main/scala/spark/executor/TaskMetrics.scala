@@ -1,6 +1,28 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package spark.executor
 
 class TaskMetrics extends Serializable {
+  /**
+   * Host's name the task runs on 
+   */
+  var hostname: String = _
+
   /**
    * Time taken on the executor to deserialize this task
    */
@@ -9,12 +31,17 @@ class TaskMetrics extends Serializable {
   /**
    * Time the executor spends actually running the task (including fetching shuffle data)
    */
-  var executorRunTime:Int = _
+  var executorRunTime: Int = _
 
   /**
    * The number of bytes this task transmitted back to the driver as the TaskResult
    */
   var resultSize: Long = _
+
+  /**
+   * Amount of time the JVM spent in garbage collection while executing this task
+   */
+  var jvmGCTime: Long = _
 
   /**
    * If this task reads from shuffle output, metrics on getting shuffle data will be collected here
@@ -34,9 +61,14 @@ object TaskMetrics {
 
 class ShuffleReadMetrics extends Serializable {
   /**
+   * Time when shuffle finishs
+   */
+  var shuffleFinishTime: Long = _
+
+  /**
    * Total number of blocks fetched in a shuffle (remote or local)
    */
-  var totalBlocksFetched : Int = _
+  var totalBlocksFetched: Int = _
 
   /**
    * Number of remote blocks fetched in a shuffle
@@ -47,11 +79,6 @@ class ShuffleReadMetrics extends Serializable {
    * Local blocks fetched in a shuffle
    */
   var localBlocksFetched: Int = _
-
-  /**
-   * Total time to read shuffle data
-   */
-  var shuffleReadMillis: Long = _
 
   /**
    * Total time that is spent blocked waiting for shuffle to fetch data

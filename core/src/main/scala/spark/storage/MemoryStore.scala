@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package spark.storage
 
 import java.util.LinkedHashMap
@@ -21,7 +38,7 @@ private class MemoryStore(blockManager: BlockManager, maxMemory: Long)
   // blocks from the memory store.
   private val putLock = new Object()
 
-  logInfo("MemoryStore started with capacity %s.".format(Utils.memoryBytesToString(maxMemory)))
+  logInfo("MemoryStore started with capacity %s.".format(Utils.bytesToString(maxMemory)))
 
   def freeMemory: Long = maxMemory - currentMemory
 
@@ -147,10 +164,10 @@ private class MemoryStore(blockManager: BlockManager, maxMemory: Long)
         currentMemory += size
         if (deserialized) {
           logInfo("Block %s stored as values to memory (estimated size %s, free %s)".format(
-            blockId, Utils.memoryBytesToString(size), Utils.memoryBytesToString(freeMemory)))
+            blockId, Utils.bytesToString(size), Utils.bytesToString(freeMemory)))
         } else {
           logInfo("Block %s stored as bytes to memory (size %s, free %s)".format(
-            blockId, Utils.memoryBytesToString(size), Utils.memoryBytesToString(freeMemory)))
+            blockId, Utils.bytesToString(size), Utils.bytesToString(freeMemory)))
         }
         true
       } else {

@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-# This Spark deploy script is a modified version of the Apache Hadoop deploy
-# script, available under the Apache 2 license:
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -10,13 +8,14 @@
 # (the "License"); you may not use this file except in compliance with
 # the License.  You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
 # Runs a Spark command as a daemon.
 #
@@ -76,6 +75,8 @@ if [ "$SPARK_IDENT_STRING" = "" ]; then
   export SPARK_IDENT_STRING="$USER"
 fi
 
+export SPARK_PRINT_LAUNCH_COMMAND="1"
+
 # get log directory
 if [ "$SPARK_LOG_DIR" = "" ]; then
   export SPARK_LOG_DIR="$SPARK_HOME/logs"
@@ -125,8 +126,9 @@ case $startStop in
 
     spark_rotate_log $log
     echo starting $command, logging to $log
+    echo "Spark Daemon: $command" > $log
     cd "$SPARK_PREFIX"
-    nohup nice -n $SPARK_NICENESS "$SPARK_PREFIX"/run $command "$@" > "$log" 2>&1 < /dev/null &
+    nohup nice -n $SPARK_NICENESS "$SPARK_PREFIX"/run $command "$@" >> "$log" 2>&1 < /dev/null &
     echo $! > $pid
     sleep 1; head "$log"
     ;;

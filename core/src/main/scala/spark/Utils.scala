@@ -1,23 +1,48 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package spark
 
 import java.io._
 import java.net.{InetAddress, URL, URI, NetworkInterface, Inet4Address, ServerSocket}
 import java.util.{Locale, Random, UUID}
 import java.util.concurrent.{ConcurrentHashMap, Executors, ThreadFactory, ThreadPoolExecutor}
-import org.apache.hadoop.fs.{Path, FileSystem, FileUtil}
+import java.util.regex.Pattern
+
+import scala.collection.Map
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.JavaConversions._
 import scala.io.Source
+
 import com.google.common.io.Files
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import spark.serializer.SerializerInstance
+
+import org.apache.hadoop.fs.{Path, FileSystem, FileUtil}
+
+import spark.serializer.{DeserializationStream, SerializationStream, SerializerInstance}
 import spark.deploy.SparkHadoopUtil
-import java.util.regex.Pattern
+import java.nio.ByteBuffer
+
 
 /**
  * Various utility methods used by Spark.
  */
 private object Utils extends Logging {
+
   /** Serialize an object using Java serialization */
   def serialize[T](o: T): Array[Byte] = {
     val bos = new ByteArrayOutputStream()
@@ -44,6 +69,47 @@ private object Utils extends Logging {
     return ois.readObject.asInstanceOf[T]
   }
 
+  /** Serialize via nested stream using specific serializer */
+  def serializeViaNestedStream(os: OutputStream, ser: SerializerInstance)(f: SerializationStream => Unit) = {
+    val osWrapper = ser.serializeStream(new OutputStream {
+      def write(b: Int) = os.write(b)
+
+      override def write(b: Array[Byte], off: Int, len: Int) = os.write(b, off, len)
+    })
+    try {
+      f(osWrapper)
+    } finally {
+      osWrapper.close()
+    }
+  }
+
+  /** Deserialize via nested stream using specific serializer */
+  def deserializeViaNestedStream(is: InputStream, ser: SerializerInstance)(f: DeserializationStream => Unit) = {
+    val isWrapper = ser.deserializeStream(new InputStream {
+      def read(): Int = is.read()
+
+      override def read(b: Array[Byte], off: Int, len: Int): Int = is.read(b, off, len)
+    })
+    try {
+      f(isWrapper)
+    } finally {
+      isWrapper.close()
+    }
+  }
+
+  /**
+   * Primitive often used when writing {@link java.nio.ByteBuffer} to {@link java.io.DataOutput}.
+   */
+  def writeByteBuffer(bb: ByteBuffer, out: ObjectOutput) = {
+    if (bb.hasArray) {
+      out.write(bb.array(), bb.arrayOffset() + bb.position(), bb.remaining())
+    } else {
+      val bbval = new Array[Byte](bb.remaining())
+      bb.get(bbval)
+      out.write(bbval)
+    }
+  }
+
   def isAlpha(c: Char): Boolean = {
     (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
   }
@@ -68,7 +134,6 @@ private object Utils extends Logging {
     return buf
   }
 
-
   private val shutdownDeletePaths = new collection.mutable.HashSet[String]()
 
   // Register the path to be deleted via shutdown hook
@@ -87,19 +152,19 @@ private object Utils extends Logging {
     }
   }
 
-  // Note: if file is child of some registered path, while not equal to it, then return true; else false
-  // This is to ensure that two shutdown hooks do not try to delete each others paths - resulting in IOException
-  // and incomplete cleanup
+  // Note: if file is child of some registered path, while not equal to it, then return true;
+  // else false. This is to ensure that two shutdown hooks do not try to delete each others
+  // paths - resulting in IOException and incomplete cleanup.
   def hasRootAsShutdownDeleteDir(file: File): Boolean = {
-
     val absolutePath = file.getAbsolutePath()
-
     val retval = shutdownDeletePaths.synchronized {
-      shutdownDeletePaths.find(path => ! absolutePath.equals(path) && absolutePath.startsWith(path) ).isDefined
+      shutdownDeletePaths.find { path =>
+        !absolutePath.equals(path) && absolutePath.startsWith(path)
+      }.isDefined
     }
-
-    if (retval) logInfo("path = " + file + ", already present as root for deletion.")
-
+    if (retval) {
+      logInfo("path = " + file + ", already present as root for deletion.")
+    }
     retval
   }
 
@@ -111,8 +176,8 @@ private object Utils extends Logging {
     while (dir == null) {
       attempts += 1
       if (attempts > maxAttempts) {
-        throw new IOException("Failed to create a temp directory after " + maxAttempts +
-            " attempts!")
+        throw new IOException("Failed to create a temp directory (under " + root + ") after " +
+          maxAttempts + " attempts!")
       }
       try {
         dir = new File(root, "spark-" + UUID.randomUUID.toString)
@@ -131,7 +196,7 @@ private object Utils extends Logging {
         if (! hasRootAsShutdownDeleteDir(dir)) Utils.deleteRecursively(dir)
       }
     })
-    return dir
+    dir
   }
 
   /** Copy all data from an InputStream to an OutputStream */
@@ -174,35 +239,30 @@ private object Utils extends Logging {
         Utils.copyStream(in, out, true)
         if (targetFile.exists && !Files.equal(tempFile, targetFile)) {
           tempFile.delete()
-          throw new SparkException("File " + targetFile + " exists and does not match contents of" +
-            " " + url)
+          throw new SparkException(
+            "File " + targetFile + " exists and does not match contents of" + " " + url)
         } else {
           Files.move(tempFile, targetFile)
         }
       case "file" | null =>
-        val sourceFile = if (uri.isAbsolute) {
-          new File(uri)
-        } else {
-          new File(url)
-        }
-        if (targetFile.exists && !Files.equal(sourceFile, targetFile)) {
-          throw new SparkException("File " + targetFile + " exists and does not match contents of" +
-            " " + url)
-        } else {
-          // Remove the file if it already exists
-          targetFile.delete()
-          // Symlink the file locally.
-          if (uri.isAbsolute) {
-            // url is absolute, i.e. it starts with "file:///". Extract the source
-            // file's absolute path from the url.
-            val sourceFile = new File(uri)
-            logInfo("Symlinking " + sourceFile.getAbsolutePath + " to " + targetFile.getAbsolutePath)
-            FileUtil.symLink(sourceFile.getAbsolutePath, targetFile.getAbsolutePath)
+        // In the case of a local file, copy the local file to the target directory.
+        // Note the difference between uri vs url.
+        val sourceFile = if (uri.isAbsolute) new File(uri) else new File(url)
+        if (targetFile.exists) {
+          // If the target file already exists, warn the user if
+          if (!Files.equal(sourceFile, targetFile)) {
+            throw new SparkException(
+              "File " + targetFile + " exists and does not match contents of" + " " + url)
           } else {
-            // url is not absolute, i.e. itself is the path to the source file.
-            logInfo("Symlinking " + url + " to " + targetFile.getAbsolutePath)
-            FileUtil.symLink(url, targetFile.getAbsolutePath)
+            // Do nothing if the file contents are the same, i.e. this file has been copied
+            // previously.
+            logInfo(sourceFile.getAbsolutePath + " has been previously copied to "
+              + targetFile.getAbsolutePath)
           }
+        } else {
+          // The file does not exist in the target directory. Copy it there.
+          logInfo("Copying " + sourceFile.getAbsolutePath + " to " + targetFile.getAbsolutePath)
+          Files.copy(sourceFile, targetFile)
         }
       case _ =>
         // Use the Hadoop filesystem library, which supports file://, hdfs://, s3://, and others
@@ -323,8 +383,6 @@ private object Utils extends Logging {
     InetAddress.getByName(address).getHostName
   }
 
-
-
   def localHostPort(): String = {
     val retval = System.getProperty("spark.hostPort", null)
     if (retval == null) {
@@ -335,7 +393,7 @@ private object Utils extends Logging {
     retval
   }
 
-  /*
+/*
   // Used by DEBUG code : remove when all testing done
   private val ipPattern = Pattern.compile("^[0-9]+(\\.[0-9]+)*$")
   def checkHost(host: String, message: String = "") {
@@ -357,15 +415,6 @@ private object Utils extends Logging {
       Utils.logErrorWithStack("Unexpected to have port " + port + " which is not valid in " + hostPort + ". Message " + message)
     }
   }
-  */
-
-  // Once testing is complete in various modes, replace with this ?
-  def checkHost(host: String, message: String = "") {}
-  def checkHostPort(hostPort: String, message: String = "") {}
-
-  def getUserNameFromEnvironment(): String = {
-    SparkHadoopUtil.getUserNameFromEnvironment
-  }
 
   // Used by DEBUG code : remove when all testing done
   def logErrorWithStack(msg: String) {
@@ -373,10 +422,25 @@ private object Utils extends Logging {
     // temp code for debug
     System.exit(-1)
   }
+*/
+
+  // Once testing is complete in various modes, replace with this ?
+  def checkHost(host: String, message: String = "") {}
+  def checkHostPort(hostPort: String, message: String = "") {}
+
+  // Used by DEBUG code : remove when all testing done
+  def logErrorWithStack(msg: String) {
+    try { throw new Exception } catch { case ex: Exception => { logError(msg, ex) } }
+  }
+
+  def getUserNameFromEnvironment(): String = {
+    SparkHadoopUtil.getUserNameFromEnvironment
+  }
 
   // Typically, this will be of order of number of nodes in cluster
   // If not, we should change it to LRUCache or something.
   private val hostPortParseResults = new ConcurrentHashMap[String, (String, Int)]()
+
   def parseHostPort(hostPort: String): (String,  Int) = {
     {
       // Check cache first.
@@ -385,7 +449,8 @@ private object Utils extends Logging {
     }
 
     val indx: Int = hostPort.lastIndexOf(':')
-    // This is potentially broken - when dealing with ipv6 addresses for example, sigh ... but then hadoop does not support ipv6 right now.
+    // This is potentially broken - when dealing with ipv6 addresses for example, sigh ...
+    // but then hadoop does not support ipv6 right now.
     // For now, we assume that if port exists, then it is valid - not check if it is an int > 0
     if (-1 == indx) {
       val retval = (hostPort, 0)
@@ -396,17 +461,6 @@ private object Utils extends Logging {
     val retval = (hostPort.substring(0, indx).trim(), hostPort.substring(indx + 1).trim().toInt)
     hostPortParseResults.putIfAbsent(hostPort, retval)
     hostPortParseResults.get(hostPort)
-  }
-
-  def addIfNoPort(hostPort: String,  port: Int): String = {
-    if (port <= 0) throw new IllegalArgumentException("Invalid port specified " + port)
-
-    // This is potentially broken - when dealing with ipv6 addresses for example, sigh ... but then hadoop does not support ipv6 right now.
-    // For now, we assume that if port exists, then it is valid - not check if it is an int > 0
-    val indx: Int = hostPort.lastIndexOf(':')
-    if (-1 != indx) return hostPort
-
-    hostPort + ":" + port
   }
 
   private[spark] val daemonThreadFactory: ThreadFactory =
@@ -467,9 +521,9 @@ private object Utils extends Logging {
   }
 
   /**
-   * Convert a memory quantity in bytes to a human-readable string such as "4.0 MB".
+   * Convert a quantity in bytes to a human-readable string such as "4.0 MB".
    */
-  def memoryBytesToString(size: Long): String = {
+  def bytesToString(size: Long): String = {
     val TB = 1L << 40
     val GB = 1L << 30
     val MB = 1L << 20
@@ -492,10 +546,30 @@ private object Utils extends Logging {
   }
 
   /**
-   * Convert a memory quantity in megabytes to a human-readable string such as "4.0 MB".
+   * Returns a human-readable string representing a duration such as "35ms"
    */
-  def memoryMegabytesToString(megabytes: Long): String = {
-    memoryBytesToString(megabytes * 1024L * 1024L)
+  def msDurationToString(ms: Long): String = {
+    val second = 1000
+    val minute = 60 * second
+    val hour = 60 * minute
+
+    ms match {
+      case t if t < second =>
+        "%d ms".format(t)
+      case t if t < minute =>
+        "%.1f s".format(t.toFloat / second)
+      case t if t < hour =>
+        "%.1f m".format(t.toFloat / minute)
+      case t =>
+        "%.2f h".format(t.toFloat / hour)
+    }
+  }
+
+  /**
+   * Convert a quantity in megabytes to a human-readable string such as "4.0 MB".
+   */
+  def megabytesToString(megabytes: Long): String = {
+    bytesToString(megabytes * 1024L * 1024L)
   }
 
   /**
@@ -528,13 +602,57 @@ private object Utils extends Logging {
     execute(command, new File("."))
   }
 
+  /**
+   * Execute a command and get its output, throwing an exception if it yields a code other than 0.
+   */
+  def executeAndGetOutput(command: Seq[String], workingDir: File = new File("."),
+                          extraEnvironment: Map[String, String] = Map.empty): String = {
+    val builder = new ProcessBuilder(command: _*)
+        .directory(workingDir)
+    val environment = builder.environment()
+    for ((key, value) <- extraEnvironment) {
+      environment.put(key, value)
+    }
+    val process = builder.start()
+    new Thread("read stderr for " + command(0)) {
+      override def run() {
+        for (line <- Source.fromInputStream(process.getErrorStream).getLines) {
+          System.err.println(line)
+        }
+      }
+    }.start()
+    val output = new StringBuffer
+    val stdoutThread = new Thread("read stdout for " + command(0)) {
+      override def run() {
+        for (line <- Source.fromInputStream(process.getInputStream).getLines) {
+          output.append(line)
+        }
+      }
+    }
+    stdoutThread.start()
+    val exitCode = process.waitFor()
+    stdoutThread.join()   // Wait for it to finish reading output
+    if (exitCode != 0) {
+      throw new SparkException("Process " + command + " exited with code " + exitCode)
+    }
+    output.toString
+  }
+
+  /**
+   * A regular expression to match classes of the "core" Spark API that we want to skip when
+   * finding the call site of a method.
+   */
+  private val SPARK_CLASS_REGEX = """^spark(\.api\.java)?(\.rdd)?\.[A-Z]""".r
+
+  private[spark] class CallSiteInfo(val lastSparkMethod: String, val firstUserFile: String,
+                                    val firstUserLine: Int, val firstUserClass: String)
 
   /**
    * When called inside a class in the spark package, returns the name of the user code class
    * (outside the spark package) that called into Spark, as well as which Spark method they called.
    * This is used, for example, to tell users where in their code each RDD got created.
    */
-  def getSparkCallSite: String = {
+  def getCallSiteInfo: CallSiteInfo = {
     val trace = Thread.currentThread.getStackTrace().filter( el =>
       (!el.getMethodName.contains("getStackTrace")))
 
@@ -546,10 +664,11 @@ private object Utils extends Logging {
     var firstUserFile = "<unknown>"
     var firstUserLine = 0
     var finished = false
+    var firstUserClass = "<unknown>"
 
     for (el <- trace) {
       if (!finished) {
-        if (el.getClassName.startsWith("spark.") && !el.getClassName.startsWith("spark.examples.")) {
+        if (SPARK_CLASS_REGEX.findFirstIn(el.getClassName) != None) {
           lastSparkMethod = if (el.getMethodName == "<init>") {
             // Spark method is a constructor; get its class name
             el.getClassName.substring(el.getClassName.lastIndexOf('.') + 1)
@@ -560,25 +679,33 @@ private object Utils extends Logging {
         else {
           firstUserLine = el.getLineNumber
           firstUserFile = el.getFileName
+          firstUserClass = el.getClassName
           finished = true
         }
       }
     }
-    "%s at %s:%s".format(lastSparkMethod, firstUserFile, firstUserLine)
+    new CallSiteInfo(lastSparkMethod, firstUserFile, firstUserLine, firstUserClass)
   }
 
-  /**
-   * Try to find a free port to bind to on the local host. This should ideally never be needed,
-   * except that, unfortunately, some of the networking libraries we currently rely on (e.g. Spray)
-   * don't let users bind to port 0 and then figure out which free port they actually bound to.
-   * We work around this by binding a ServerSocket and immediately unbinding it. This is *not*
-   * necessarily guaranteed to work, but it's the best we can do.
-   */
-  def findFreePort(): Int = {
-    val socket = new ServerSocket(0)
-    val portBound = socket.getLocalPort
-    socket.close()
-    portBound
+  def formatSparkCallSite = {
+    val callSiteInfo = getCallSiteInfo
+    "%s at %s:%s".format(callSiteInfo.lastSparkMethod, callSiteInfo.firstUserFile,
+                         callSiteInfo.firstUserLine)
+  }
+
+  /** Return a string containing part of a file from byte 'start' to 'end'. */
+  def offsetBytes(path: String, start: Long, end: Long): String = {
+    val file = new File(path)
+    val length = file.length()
+    val effectiveEnd = math.min(length, end)
+    val effectiveStart = math.max(0, start)
+    val buff = new Array[Byte]((effectiveEnd-effectiveStart).toInt)
+    val stream = new FileInputStream(file)
+
+    stream.skip(effectiveStart)
+    stream.read(buff)
+    stream.close()
+    Source.fromBytes(buff).mkString
   }
 
   /**
@@ -607,5 +734,77 @@ private object Utils extends Logging {
       case ise: IllegalStateException => return true
     }
     return false
+  }
+
+  def isSpace(c: Char): Boolean = {
+    " \t\r\n".indexOf(c) != -1
+  }
+
+  /**
+   * Split a string of potentially quoted arguments from the command line the way that a shell
+   * would do it to determine arguments to a command. For example, if the string is 'a "b c" d',
+   * then it would be parsed as three arguments: 'a', 'b c' and 'd'.
+   */
+  def splitCommandString(s: String): Seq[String] = {
+    val buf = new ArrayBuffer[String]
+    var inWord = false
+    var inSingleQuote = false
+    var inDoubleQuote = false
+    var curWord = new StringBuilder
+    def endWord() {
+      buf += curWord.toString
+      curWord.clear()
+    }
+    var i = 0
+    while (i < s.length) {
+      var nextChar = s.charAt(i)
+      if (inDoubleQuote) {
+        if (nextChar == '"') {
+          inDoubleQuote = false
+        } else if (nextChar == '\\') {
+          if (i < s.length - 1) {
+            // Append the next character directly, because only " and \ may be escaped in
+            // double quotes after the shell's own expansion
+            curWord.append(s.charAt(i + 1))
+            i += 1
+          }
+        } else {
+          curWord.append(nextChar)
+        }
+      } else if (inSingleQuote) {
+        if (nextChar == '\'') {
+          inSingleQuote = false
+        } else {
+          curWord.append(nextChar)
+        }
+        // Backslashes are not treated specially in single quotes
+      } else if (nextChar == '"') {
+        inWord = true
+        inDoubleQuote = true
+      } else if (nextChar == '\'') {
+        inWord = true
+        inSingleQuote = true
+      } else if (!isSpace(nextChar)) {
+        curWord.append(nextChar)
+        inWord = true
+      } else if (inWord && isSpace(nextChar)) {
+        endWord()
+        inWord = false
+      }
+      i += 1
+    }
+    if (inWord || inDoubleQuote || inSingleQuote) {
+      endWord()
+    }
+    return buf
+  }
+
+ /* Calculates 'x' modulo 'mod', takes to consideration sign of x,
+  * i.e. if 'x' is negative, than 'x' % 'mod' is negative too
+  * so function return (x % mod) + mod in that case.
+  */
+  def nonNegativeMod(x: Int, mod: Int): Int = {
+    val rawMod = x % mod
+    rawMod + (if (rawMod < 0) mod else 0)
   }
 }

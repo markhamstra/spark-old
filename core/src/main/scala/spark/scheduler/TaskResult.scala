@@ -1,9 +1,28 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package spark.scheduler
 
 import java.io._
 
 import scala.collection.mutable.Map
 import spark.executor.TaskMetrics
+import spark.{Utils, SparkEnv}
+import java.nio.ByteBuffer
 
 // Task result. Also contains updates to accumulator variables.
 // TODO: Use of distributed cache to return result is a hack to get around
@@ -13,7 +32,13 @@ class TaskResult[T](var value: T, var accumUpdates: Map[Long, Any], var metrics:
   def this() = this(null.asInstanceOf[T], null, null)
 
   override def writeExternal(out: ObjectOutput) {
-    out.writeObject(value)
+
+    val objectSer = SparkEnv.get.serializer.newInstance()
+    val bb = objectSer.serialize(value)
+
+    out.writeInt(bb.remaining())
+    Utils.writeByteBuffer(bb, out)
+
     out.writeInt(accumUpdates.size)
     for ((key, value) <- accumUpdates) {
       out.writeLong(key)
@@ -23,7 +48,14 @@ class TaskResult[T](var value: T, var accumUpdates: Map[Long, Any], var metrics:
   }
 
   override def readExternal(in: ObjectInput) {
-    value = in.readObject().asInstanceOf[T]
+
+    val objectSer = SparkEnv.get.serializer.newInstance()
+
+    val blen = in.readInt()
+    val byteVal = new Array[Byte](blen)
+    in.readFully(byteVal)
+    value = objectSer.deserialize(ByteBuffer.wrap(byteVal))
+
     val numUpdates = in.readInt
     if (numUpdates == 0) {
       accumUpdates = null
