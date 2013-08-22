@@ -281,7 +281,7 @@ class DAGScheduler(
 
   private def jobIdToStageIdsAdd(jobId: Int) {
     val stageSet = jobIdToStageIds.getOrElseUpdate(jobId, new HashSet[Int]())
-    stageIdToJobIds.foreach{case (stageId, jobSet) =>
+    stageIdToJobIds.foreach { case (stageId, jobSet) =>
       if (jobSet.contains(jobId)) {
         stageSet += stageId
       }
@@ -289,31 +289,46 @@ class DAGScheduler(
   }
 
   private def jobIdToStageIdsRemove(jobId: Int) {
-    if (!jobIdToStageIds.contains(jobId))
+    if (!jobIdToStageIds.contains(jobId)) {
       logError("Trying to remove unregistered job " + jobId)
-    else {
+    } else {
       val registeredStages = jobIdToStageIds(jobId)
-      if (registeredStages.isEmpty)
+      if (registeredStages.isEmpty) {
         logError("No stages registered for job " + jobId)
-      else stageIdToJobIds.filterKeys(stageId => registeredStages.contains(stageId)).foreach {
+      } else { stageIdToJobIds.filterKeys(stageId => registeredStages.contains(stageId)).foreach {
         case (stageId, jobSet) => {
-          if (!jobSet.contains(jobId))
+          if (!jobSet.contains(jobId)) {
             logError("Job %d not registered for stage %d even though that stage was registered for the job"
               .format(jobId, stageId))
-          else
+          } else {
             jobSet -= jobId
+          }
           if (jobSet.isEmpty) {
-            stageIdToStage.get(stageId).foreach{s =>
-              pendingTasks -= s
-              waiting -= s
-              running -= s
-              failed -= s
+            stageIdToStage.get(stageId).foreach { s =>
+              stageToInfos -= s
+              if (pendingTasks.contains(s)) {
+                logError("Tasks still pending for stage " + stageId + " even though there are no more jobs registered for that stage.")
+                pendingTasks -= s
+              }
+              if (waiting.contains(s)) {
+                logError("Still waiting on stage " + stageId + " even though there are no more jobs registered for that stage.")
+                waiting -= s
+              }
+              if (running.contains(s)) {
+                logError("Stage " + stageId + " still running even though there are no more jobs registered for that stage.")
+                running -= s
+              }
+              if (failed.contains(s)) {
+                logError("Stage " + stageId + " still registered as failed even though there are no more jobs registered for that stage.")
+                failed -= s
+              }
             }
             stageIdToStage -= stageId
+            stageIdToJobIds -= stageId
             logDebug("After removal of stage %d, remaining stages = %d".format(stageId, stageIdToStage.size))
           }
         }
-      }
+      }}
       jobIdToStageIds -= jobId
     }
   }
@@ -876,8 +891,9 @@ class DAGScheduler(
       case n: NarrowDependency[_] =>
         for (inPart <- n.getParents(partition)) {
           val locs = getPreferredLocs(n.rdd, inPart)
-          if (locs != Nil)
+          if (locs != Nil) {
             return locs
+          }
         }
       case _ =>
     })
@@ -900,6 +916,15 @@ class DAGScheduler(
     sizeBefore = stageToInfos.size
     stageToInfos.clearOldValues(cleanupTime)
     logInfo("stageToInfos " + sizeBefore + " --> " + stageToInfos.size)
+
+    sizeBefore = jobIdToStageIds.size
+    jobIdToStageIds.clearOldValues(cleanupTime)
+    logInfo("jobIdToStageIds " + sizeBefore + " --> " + jobIdToStageIds.size)
+
+    sizeBefore = stageIdToJobIds.size
+    stageIdToJobIds.clearOldValues(cleanupTime)
+    logInfo("stageIdToJobIds " + sizeBefore + " --> " + stageIdToJobIds.size)
+
   }
 
   def stop() {
