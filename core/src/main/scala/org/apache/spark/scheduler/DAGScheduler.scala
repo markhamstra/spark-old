@@ -460,6 +460,11 @@ class DAGScheduler(
           completion.task, completion.reason, completion.taskInfo, completion.taskMetrics))
         handleTaskCompletion(completion)
 
+      case LocalJobCompleted(stage) =>
+        stageIdToJobIds -= stage.id
+        stageIdToStage -= stage.id
+        stageToInfos -= stage
+
       case TaskSetFailed(taskSet, reason) =>
         abortStage(stageIdToStage(taskSet.stageId), reason)
 
@@ -573,6 +578,8 @@ class DAGScheduler(
     } catch {
       case e: Exception =>
         job.listener.jobFailed(e)
+    } finally {
+      eventQueue.put(LocalJobCompleted(job.finalStage))
     }
   }
 
