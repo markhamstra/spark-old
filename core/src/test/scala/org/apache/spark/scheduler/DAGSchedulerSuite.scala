@@ -443,7 +443,7 @@ class DAGSchedulerSuite extends FunSuite with BeforeAndAfter with LocalSparkCont
     assert(d.stageToInfos.isEmpty)
     assert(d.resultStageToJob.isEmpty)
     assert(d.running.isEmpty)
-//    assert(d.shuffleToMapStage.isEmpty)
+    assert(d.shuffleToMapStage.isEmpty)
     assert(d.waiting.isEmpty)
   }
 }
