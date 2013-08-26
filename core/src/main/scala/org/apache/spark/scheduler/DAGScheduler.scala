@@ -183,7 +183,7 @@ class DAGScheduler(
     shuffleToMapStage.get(shuffleDep.shuffleId) match {
       case Some(stage) => stage
       case None =>
-        val stage = newStage(shuffleDep.rdd, Some(shuffleDep), jobId)
+        val stage = newOrUsedStage(shuffleDep.rdd, shuffleDep, jobId)
         shuffleToMapStage(shuffleDep.shuffleId) = stage
         stage
     }
@@ -201,17 +201,33 @@ class DAGScheduler(
       callSite: Option[String] = None)
     : Stage =
   {
-    if (shuffleDep != None) {
-      // Kind of ugly: need to register RDDs with the cache and map output tracker here
-      // since we can't do it in the RDD constructor because # of partitions is unknown
-      logInfo("Registering RDD " + rdd.id + " (" + rdd.origin + ")")
-      mapOutputTracker.registerShuffle(shuffleDep.get.shuffleId, rdd.partitions.size)
-    }
     val id = nextStageId.getAndIncrement()
     val stage = new Stage(id, rdd, shuffleDep, getParentStages(rdd, jobId), jobId, callSite)
     stageIdToStage(id) = stage
     registerJobIdWithStages(jobId, stage)
     stageToInfos(stage) = StageInfo(stage)
+    stage
+  }
+
+  private def newOrUsedStage(
+      rdd: RDD[_],
+      shuffleDep: ShuffleDependency[_,_],
+      jobId: Int,
+      callSite: Option[String] = None)
+    : Stage =
+  {
+    val stage = newStage(rdd, Some(shuffleDep), jobId, callSite)
+    val serLocs = mapOutputTracker.getSerializedLocations(shuffleDep.shuffleId)
+    val locs = mapOutputTracker.deserializeStatuses(serLocs)
+    if (mapOutputTracker.has(shuffleDep.shuffleId)) {
+      for (i <- 0 until locs.size) stage.outputLocs(i) = List(locs(i))
+      stage.numAvailableOutputs = locs.size
+    } else {
+      // Kind of ugly: need to register RDDs with the cache and map output tracker here
+      // since we can't do it in the RDD constructor because # of partitions is unknown
+      logInfo("Registering RDD " + rdd.id + " (" + rdd.origin + ")")
+      mapOutputTracker.registerShuffle(shuffleDep.shuffleId, rdd.partitions.size)
+    }
     stage
   }
 
@@ -293,6 +309,7 @@ class DAGScheduler(
       // data structures based on Stage
       stageIdToStage.get(stageId).foreach { s => {
         stageToInfos -= s
+        shuffleToMapStage.keys.filter(shuffleToMapStage(_) == s).foreach(shuffleToMapStage.remove(_))
         if (pendingTasks.contains(s)) {
           logError("Tasks still pending for stage %d even though there are no more jobs registered for that stage."
                    .format(stageId))
@@ -583,27 +600,41 @@ class DAGScheduler(
     }
   }
 
+  private def activeJobForStage(stage: Stage): Option[Int] = {
+    if (stageIdToJobIds.contains(stage.id)) {
+      val jobsThatUseStage: Array[Int] = stageIdToJobIds(stage.id).toArray.sorted
+      jobsThatUseStage.find(idToActiveJob.contains(_))
+    } else {
+      None
+    }
+  }
+
   /** Submits stage, but first recursively submits any missing parents. */
   private def submitStage(stage: Stage) {
-    logDebug("submitStage(" + stage + ")")
-    if (!waiting(stage) && !running(stage) && !failed(stage)) {
-      val missing = getMissingParentStages(stage).sortBy(_.id)
-      logDebug("missing: " + missing)
-      if (missing == Nil) {
-        logInfo("Submitting " + stage + " (" + stage.rdd + "), which has no missing parents")
-        submitMissingTasks(stage)
-        running += stage
-      } else {
-        for (parent <- missing) {
-          submitStage(parent)
+    val jobId = activeJobForStage(stage)
+    if (jobId.isDefined) {
+      logDebug("submitStage(" + stage + ")")
+      if (!waiting(stage) && !running(stage) && !failed(stage)) {
+        val missing = getMissingParentStages(stage).sortBy(_.id)
+        logDebug("missing: " + missing)
+        if (missing == Nil) {
+          logInfo("Submitting " + stage + " (" + stage.rdd + "), which has no missing parents")
+          submitMissingTasks(stage, jobId.get)
+          running += stage
+        } else {
+          for (parent <- missing) {
+            submitStage(parent)
+          }
+          waiting += stage
         }
-        waiting += stage
       }
+    } else {
+      abortStage(stage, "No active job for stage " + stage.id)
     }
   }
 
   /** Called when stage's parents are available and we can now do its task. */
-  private def submitMissingTasks(stage: Stage) {
+  private def submitMissingTasks(stage: Stage, jobId: Int) {
     logDebug("submitMissingTasks(" + stage + ")")
     // Get our pending tasks and remember them in our pendingTasks entry
     val myPending = pendingTasks.getOrElseUpdate(stage, new HashSet)
@@ -625,7 +656,7 @@ class DAGScheduler(
     }
     // must be run listener before possible NotSerializableException
     // should be "StageSubmitted" first and then "JobEnded"
-    val properties = idToActiveJob(stage.jobId).properties
+    val properties = idToActiveJob(jobId).properties
     listenerBus.post(SparkListenerStageSubmitted(stage, tasks.size, properties))
 
     if (tasks.size > 0) {
@@ -668,7 +699,7 @@ class DAGScheduler(
     def markStageAsFinished(stage: Stage) = {
       val serviceTime = stage.submissionTime match {
         case Some(t) => "%.03f".format((System.currentTimeMillis() - t) / 1000.0)
-        case _ => "Unkown"
+        case _ => "Unknown"
       }
       logInfo("%s (%s) finished in %s s".format(stage, stage.name, serviceTime))
       stage.completionTime = Some(System.currentTimeMillis)
@@ -733,7 +764,7 @@ class DAGScheduler(
                   changeEpoch = true)
               }
               clearCacheLocs()
-              if (stage.outputLocs.count(_ == Nil) != 0) {
+              if (stage.outputLocs.exists(_ == Nil)) {
                 // Some tasks had failed; let's resubmit this stage
                 // TODO: Lower-level scheduler should also deal with this
                 logInfo("Resubmitting " + stage + " (" + stage.name +
@@ -750,9 +781,12 @@ class DAGScheduler(
                 }
                 waiting --= newlyRunnable
                 running ++= newlyRunnable
-                for (stage <- newlyRunnable.sortBy(_.id)) {
+                for {
+                  stage <- newlyRunnable.sortBy(_.id)
+                  jobId <- activeJobForStage(stage)
+                } {
                   logInfo("Submitting " + stage + " (" + stage.rdd + "), which is now runnable")
-                  submitMissingTasks(stage)
+                  submitMissingTasks(stage, jobId)
                 }
               }
             }
