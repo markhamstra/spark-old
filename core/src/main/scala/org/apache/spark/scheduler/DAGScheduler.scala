@@ -192,7 +192,8 @@ class DAGScheduler(
   /**
    * Create a Stage for the given RDD, either as a shuffle map stage (for a ShuffleDependency) or
    * as a result stage for the final RDD used directly in an action. The stage will also be
-   * associated with the provided jobId.
+   * associated with the provided jobId.  Shuffle map stages whose shuffleId may have previously
+   * been registered in the MapOutputTracker should be (re)-created using newOrUsedStage.
    */
   private def newStage(
       rdd: RDD[_],
@@ -209,6 +210,12 @@ class DAGScheduler(
     stage
   }
 
+  /**
+   * Create a shuffle map Stage for the given RDD.  The stage will also be associated with the
+   * provided jobId.  If a stage for the shuffleId existed previously so that the shuffleId is
+   * present in the MapOutputTracker, then the number and location of available outputs are
+   * recovered from the MapOutputTracker
+   */
   private def newOrUsedStage(
       rdd: RDD[_],
       shuffleDep: ShuffleDependency[_,_],
@@ -217,9 +224,9 @@ class DAGScheduler(
     : Stage =
   {
     val stage = newStage(rdd, Some(shuffleDep), jobId, callSite)
-    val serLocs = mapOutputTracker.getSerializedLocations(shuffleDep.shuffleId)
-    val locs = mapOutputTracker.deserializeStatuses(serLocs)
     if (mapOutputTracker.has(shuffleDep.shuffleId)) {
+      val serLocs = mapOutputTracker.getSerializedLocations(shuffleDep.shuffleId)
+      val locs = mapOutputTracker.deserializeStatuses(serLocs)
       for (i <- 0 until locs.size) stage.outputLocs(i) = List(locs(i))
       stage.numAvailableOutputs = locs.size
     } else {
@@ -307,7 +314,7 @@ class DAGScheduler(
   private def jobIdToStageIdsRemove(jobId: Int) {
     def removeStage(stageId: Int) {
       // data structures based on Stage
-      stageIdToStage.get(stageId).foreach { s => {
+      stageIdToStage.get(stageId).foreach { s =>
         stageToInfos -= s
         shuffleToMapStage.keys.filter(shuffleToMapStage(_) == s).foreach(shuffleToMapStage.remove(_))
         if (pendingTasks.contains(s)) {
@@ -330,7 +337,7 @@ class DAGScheduler(
                    .format(stageId))
           failed -= s
         }
-      }}
+      }
       // data structures based on StageId
       stageIdToStage -= stageId
       stageIdToJobIds -= stageId
@@ -346,7 +353,7 @@ class DAGScheduler(
         logError("No stages registered for job " + jobId)
       } else {
         stageIdToJobIds.filterKeys(stageId => registeredStages.contains(stageId)).foreach {
-          case (stageId, jobSet) => {
+          case (stageId, jobSet) =>
             if (!jobSet.contains(jobId)) {
               logError("Job %d not registered for stage %d even though that stage was registered for the job"
                        .format(jobId, stageId))
@@ -356,8 +363,8 @@ class DAGScheduler(
             if (jobSet.isEmpty) { // nobody needs this stage any more
               removeStage(stageId)
             }
-          }
-        }}
+        }
+      }
       jobIdToStageIds -= jobId
     }
   }
@@ -478,9 +485,9 @@ class DAGScheduler(
         handleTaskCompletion(completion)
 
       case LocalJobCompleted(stage) =>
-        stageIdToJobIds -= stage.id
-        stageIdToStage -= stage.id
-        stageToInfos -= stage
+        stageIdToJobIds -= stage.id    // clean up data structures that were populated for a local job,
+        stageIdToStage -= stage.id     // but that won't get cleaned up via tha normal path through
+        stageToInfos -= stage          // completion events or stage abort
 
       case TaskSetFailed(taskSet, reason) =>
         abortStage(stageIdToStage(taskSet.stageId), reason)
@@ -600,6 +607,7 @@ class DAGScheduler(
     }
   }
 
+  /** Finds the earliest-created active job that needs the stage */
   private def activeJobForStage(stage: Stage): Option[Int] = {
     if (stageIdToJobIds.contains(stage.id)) {
       val jobsThatUseStage: Array[Int] = stageIdToJobIds(stage.id).toArray.sorted
