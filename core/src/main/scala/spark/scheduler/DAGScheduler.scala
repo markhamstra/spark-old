@@ -123,14 +123,14 @@ class DAGScheduler(
           } catch {
             case ex: Throwable =>
               if (numRestartsDone < 10) {
-                log.error("DAGScheduler thread died, re-starting the thread after one second", ex)
+                logError("DAGScheduler thread died, re-starting the thread after one second", ex)
                 // Wait for one second to prevent these restarts from consuming too much CPU. This
                 // is still an error that should not normally happen.
                 Thread.sleep(1000)
                 numRestartsDone += 1
               } else {
-                log.error("DAGScheduler crashed after " + numRestartsDone + " restarts, " +
-                          "stopping the application.", ex)
+                logError("DAGScheduler crashed after " + numRestartsDone + " restarts, " +
+                         "stopping the application.", ex)
                 System.exit(1)
               }
           }
