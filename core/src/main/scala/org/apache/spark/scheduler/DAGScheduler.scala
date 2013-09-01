@@ -192,8 +192,8 @@ class DAGScheduler(
   /**
    * Create a Stage for the given RDD, either as a shuffle map stage (for a ShuffleDependency) or
    * as a result stage for the final RDD used directly in an action. The stage will also be
-   * associated with the provided jobId.  Shuffle map stages whose shuffleId may have previously
-   * been registered in the MapOutputTracker should be (re)-created using newOrUsedStage.
+   * associated with the provided jobId.  Shuffle map stages, whose shuffleId may have previously
+   * been registered in the MapOutputTracker, should be (re)-created using newOrUsedStage.
    */
   private def newStage(
       rdd: RDD[_],
@@ -289,6 +289,10 @@ class DAGScheduler(
     missing.toList
   }
 
+  /**
+   * Registers the given jobId among the jobs that need the given stage and
+   * all of that stage's ancestors.
+   */
   private def registerJobIdWithStages(jobId: Int, stage: Stage) {
     def registerJobIdWithStageList(stages: List[Stage]) {
       if (!stages.isEmpty) {
@@ -359,9 +363,9 @@ class DAGScheduler(
                        .format(jobId, stageId))
             } else {
               jobSet -= jobId
-            }
-            if (jobSet.isEmpty) { // nobody needs this stage any more
-              removeStage(stageId)
+              if (jobSet.isEmpty) { // nobody needs this stage anymore
+                removeStage(stageId)
+              }
             }
         }
       }
@@ -486,7 +490,7 @@ class DAGScheduler(
 
       case LocalJobCompleted(stage) =>
         stageIdToJobIds -= stage.id    // clean up data structures that were populated for a local job,
-        stageIdToStage -= stage.id     // but that won't get cleaned up via tha normal path through
+        stageIdToStage -= stage.id     // but that won't get cleaned up via the normal paths through
         stageToInfos -= stage          // completion events or stage abort
 
       case TaskSetFailed(taskSet, reason) =>
