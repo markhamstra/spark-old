@@ -321,11 +321,11 @@ class DAGScheduler(
       stageIdToStage.get(stageId).foreach { s =>
         stageToInfos -= s
         shuffleToMapStage.keys.filter(shuffleToMapStage(_) == s).foreach(shuffleToMapStage.remove(_))
-        if (pendingTasks.contains(s)) {
+        if (pendingTasks.contains(s) && !pendingTasks(s).isEmpty) {
           logError("Tasks still pending for stage %d even though there are no more jobs registered for that stage."
                    .format(stageId))
-          pendingTasks -= s
         }
+        pendingTasks -= s
         if (waiting.contains(s)) {
           logError("Still waiting on stage %d even though there are no more jobs registered for that stage."
                    .format(stageId))
