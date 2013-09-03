@@ -111,6 +111,10 @@ class DAGScheduler(
 
   val nextStageId = new AtomicInteger(0)
 
+  val jobIdToStageIds = new TimeStampedHashMap[Int, HashSet[Int]]
+
+  val stageIdToJobIds = new TimeStampedHashMap[Int, HashSet[Int]]
+
   val stageIdToStage = new TimeStampedHashMap[Int, Stage]
 
   val shuffleToMapStage = new TimeStampedHashMap[Int, Stage]
@@ -181,7 +185,7 @@ class DAGScheduler(
     shuffleToMapStage.get(shuffleDep.shuffleId) match {
       case Some(stage) => stage
       case None =>
-        val stage = newStage(shuffleDep.rdd, Some(shuffleDep), jobId)
+        val stage = newOrUsedStage(shuffleDep.rdd, shuffleDep, jobId)
         shuffleToMapStage(shuffleDep.shuffleId) = stage
         stage
     }
@@ -190,7 +194,8 @@ class DAGScheduler(
   /**
    * Create a Stage for the given RDD, either as a shuffle map stage (for a ShuffleDependency) or
    * as a result stage for the final RDD used directly in an action. The stage will also be
-   * associated with the provided jobId.
+   * associated with the provided jobId.  Shuffle map stages, whose shuffleId may have previously
+   * been registered in the MapOutputTracker, should be (re)-created using newOrUsedStage.
    */
   private def newStage(
       rdd: RDD[_],
@@ -199,18 +204,41 @@ class DAGScheduler(
       callSite: Option[String] = None)
     : Stage =
   {
-    if (shuffleDep != None) {
-      // Kind of ugly: need to register RDDs with the cache and map output tracker here
-      // since we can't do it in the RDD constructor because # of partitions is unknown
-      logInfo("Registering RDD " + rdd.id + " (" + rdd.origin + ")")
-      mapOutputTracker.registerShuffle(shuffleDep.get.shuffleId, rdd.partitions.size)
-    }
     val id = nextStageId.getAndIncrement()
     val stage = new Stage(id, rdd, shuffleDep, getParentStages(rdd, jobId), jobId, callSite)
     stageIdToStage(id) = stage
+    registerJobIdWithStages(jobId, stage)
     stageToInfos(stage) = StageInfo(stage)
     val stageIdSet = jobIdToStageIds.getOrElseUpdate(jobId, new HashSet)
     stageIdSet += id
+    stage
+  }
+
+  /**
+   * Create a shuffle map Stage for the given RDD.  The stage will also be associated with the
+   * provided jobId.  If a stage for the shuffleId existed previously so that the shuffleId is
+   * present in the MapOutputTracker, then the number and location of available outputs are
+   * recovered from the MapOutputTracker
+   */
+  private def newOrUsedStage(
+      rdd: RDD[_],
+      shuffleDep: ShuffleDependency[_,_],
+      jobId: Int,
+      callSite: Option[String] = None)
+    : Stage =
+  {
+    val stage = newStage(rdd, Some(shuffleDep), jobId, callSite)
+    if (mapOutputTracker.has(shuffleDep.shuffleId)) {
+      val serLocs = mapOutputTracker.getSerializedLocations(shuffleDep.shuffleId)
+      val locs = mapOutputTracker.deserializeStatuses(serLocs)
+      for (i <- 0 until locs.size) stage.outputLocs(i) = List(locs(i))
+      stage.numAvailableOutputs = locs.size
+    } else {
+      // Kind of ugly: need to register RDDs with the cache and map output tracker here
+      // since we can't do it in the RDD constructor because # of partitions is unknown
+      logInfo("Registering RDD " + rdd.id + " (" + rdd.origin + ")")
+      mapOutputTracker.registerShuffle(shuffleDep.shuffleId, rdd.partitions.size)
+    }
     stage
   }
 
@@ -263,6 +291,90 @@ class DAGScheduler(
     }
     visit(stage.rdd)
     missing.toList
+  }
+
+  /**
+   * Registers the given jobId among the jobs that need the given stage and
+   * all of that stage's ancestors.
+   */
+  private def registerJobIdWithStages(jobId: Int, stage: Stage) {
+    def registerJobIdWithStageList(stages: List[Stage]) {
+      if (!stages.isEmpty) {
+        val s = stages.head
+        stageIdToJobIds.getOrElseUpdate(s.id, new HashSet[Int]()) += jobId
+        val parents = getParentStages(s.rdd, jobId)
+        val parentsWithoutThisJobId = parents.filter(p => !stageIdToJobIds.get(p.id).exists(_.contains(jobId)))
+        registerJobIdWithStageList(parentsWithoutThisJobId ++ stages.tail)
+      }
+    }
+    registerJobIdWithStageList(List(stage))
+  }
+
+  private def jobIdToStageIdsAdd(jobId: Int) {
+    val stageSet = jobIdToStageIds.getOrElseUpdate(jobId, new HashSet[Int]())
+    stageIdToJobIds.foreach { case (stageId, jobSet) =>
+      if (jobSet.contains(jobId)) {
+        stageSet += stageId
+      }
+    }
+  }
+
+  private def jobIdToStageIdsRemove(jobId: Int) {
+    def removeStage(stageId: Int) {
+      // data structures based on Stage
+      stageIdToStage.get(stageId).foreach { s =>
+        stageToInfos -= s
+        shuffleToMapStage.keys.filter(shuffleToMapStage(_) == s).foreach(shuffleToMapStage.remove(_))
+        if (pendingTasks.contains(s) && !pendingTasks(s).isEmpty) {
+          logError("Tasks still pending for stage %d even though there are no more jobs registered for that stage."
+                   .format(stageId))
+        }
+        pendingTasks -= s
+        if (waiting.contains(s)) {
+          logError("Still waiting on stage %d even though there are no more jobs registered for that stage."
+                   .format(stageId))
+          waiting -= s
+        }
+        if (running.contains(s)) {
+          logError("Stage %d still running even though there are no more jobs registered for that stage."
+                   .format(stageId))
+          running -= s
+        }
+        if (failed.contains(s)) {
+          logError("Stage %d still registered as failed even though there are no more jobs registered for that stage."
+                   .format(stageId))
+          failed -= s
+        }
+      }
+      // data structures based on StageId
+      stageIdToStage -= stageId
+      stageIdToJobIds -= stageId
+
+      logDebug("After removal of stage %d, remaining stages = %d".format(stageId, stageIdToStage.size))
+    }
+
+    if (!jobIdToStageIds.contains(jobId)) {
+      logError("Trying to remove unregistered job " + jobId)
+    } else {
+      val registeredStages = jobIdToStageIds(jobId)
+      if (registeredStages.isEmpty) {
+        logError("No stages registered for job " + jobId)
+      } else {
+        stageIdToJobIds.filterKeys(stageId => registeredStages.contains(stageId)).foreach {
+          case (stageId, jobSet) =>
+            if (!jobSet.contains(jobId)) {
+              logError("Job %d not registered for stage %d even though that stage was registered for the job"
+                       .format(jobId, stageId))
+            } else {
+              jobSet -= jobId
+              if (jobSet.isEmpty) { // nobody needs this stage anymore
+                removeStage(stageId)
+              }
+            }
+        }
+      }
+      jobIdToStageIds -= jobId
+    }
   }
 
   /**
@@ -358,10 +470,11 @@ class DAGScheduler(
           // Compute very short actions like first() or take() with no parent stages locally.
           runLocally(job)
         } else {
-          listenerBus.post(SparkListenerJobStart(job, properties))
           idToActiveJob(jobId) = job
           activeJobs += job
           resultStageToJob(finalStage) = job
+          jobIdToStageIdsAdd(jobId)
+          listenerBus.post(SparkListenerJobStart(job, jobIdToStageIds(jobId).toArray, properties))
           submitStage(finalStage)
         }
 
@@ -378,6 +491,11 @@ class DAGScheduler(
         listenerBus.post(SparkListenerTaskEnd(
           completion.task, completion.reason, completion.taskInfo, completion.taskMetrics))
         handleTaskCompletion(completion)
+
+      case LocalJobCompleted(stage) =>
+        stageIdToJobIds -= stage.id    // clean up data structures that were populated for a local job,
+        stageIdToStage -= stage.id     // but that won't get cleaned up via the normal paths through
+        stageToInfos -= stage          // completion events or stage abort
 
       case TaskSetFailed(taskSet, reason) =>
         abortStage(stageIdToStage(taskSet.stageId), reason)
@@ -492,30 +610,47 @@ class DAGScheduler(
     } catch {
       case e: Exception =>
         job.listener.jobFailed(e)
+    } finally {
+      eventQueue.put(LocalJobCompleted(job.finalStage))
+    }
+  }
+
+  /** Finds the earliest-created active job that needs the stage */
+  private def activeJobForStage(stage: Stage): Option[Int] = {
+    if (stageIdToJobIds.contains(stage.id)) {
+      val jobsThatUseStage: Array[Int] = stageIdToJobIds(stage.id).toArray.sorted
+      jobsThatUseStage.find(idToActiveJob.contains(_))
+    } else {
+      None
     }
   }
 
   /** Submits stage, but first recursively submits any missing parents. */
   private def submitStage(stage: Stage) {
-    logDebug("submitStage(" + stage + ")")
-    if (!waiting(stage) && !running(stage) && !failed(stage)) {
-      val missing = getMissingParentStages(stage).sortBy(_.id)
-      logDebug("missing: " + missing)
-      if (missing == Nil) {
-        logInfo("Submitting " + stage + " (" + stage.rdd + "), which has no missing parents")
-        submitMissingTasks(stage)
-        running += stage
-      } else {
-        for (parent <- missing) {
-          submitStage(parent)
+    val jobId = activeJobForStage(stage)
+    if (jobId.isDefined) {
+      logDebug("submitStage(" + stage + ")")
+      if (!waiting(stage) && !running(stage) && !failed(stage)) {
+        val missing = getMissingParentStages(stage).sortBy(_.id)
+        logDebug("missing: " + missing)
+        if (missing == Nil) {
+          logInfo("Submitting " + stage + " (" + stage.rdd + "), which has no missing parents")
+          submitMissingTasks(stage, jobId.get)
+          running += stage
+        } else {
+          for (parent <- missing) {
+            submitStage(parent)
+          }
+          waiting += stage
         }
-        waiting += stage
       }
+    } else {
+      abortStage(stage, "No active job for stage " + stage.id)
     }
   }
 
   /** Called when stage's parents are available and we can now do its task. */
-  private def submitMissingTasks(stage: Stage) {
+  private def submitMissingTasks(stage: Stage, jobId: Int) {
     logDebug("submitMissingTasks(" + stage + ")")
     // Get our pending tasks and remember them in our pendingTasks entry
     val myPending = pendingTasks.getOrElseUpdate(stage, new HashSet)
@@ -537,7 +672,7 @@ class DAGScheduler(
     }
     // must be run listener before possible NotSerializableException
     // should be "StageSubmitted" first and then "JobEnded"
-    val properties = idToActiveJob(stage.jobId).properties
+    val properties = idToActiveJob(jobId).properties
     listenerBus.post(SparkListenerStageSubmitted(stage, tasks.size, properties))
 
     if (tasks.size > 0) {
@@ -580,7 +715,7 @@ class DAGScheduler(
     def markStageAsFinished(stage: Stage) = {
       val serviceTime = stage.submissionTime match {
         case Some(t) => "%.03f".format((System.currentTimeMillis() - t) / 1000.0)
-        case _ => "Unkown"
+        case _ => "Unknown"
       }
       logInfo("%s (%s) finished in %s s".format(stage, stage.name, serviceTime))
       stage.completionTime = Some(System.currentTimeMillis)
@@ -645,7 +780,7 @@ class DAGScheduler(
                   changeEpoch = true)
               }
               clearCacheLocs()
-              if (stage.outputLocs.count(_ == Nil) != 0) {
+              if (stage.outputLocs.exists(_ == Nil)) {
                 // Some tasks had failed; let's resubmit this stage
                 // TODO: Lower-level scheduler should also deal with this
                 logInfo("Resubmitting " + stage + " (" + stage.name +
@@ -662,9 +797,12 @@ class DAGScheduler(
                 }
                 waiting --= newlyRunnable
                 running ++= newlyRunnable
-                for (stage <- newlyRunnable.sortBy(_.id)) {
+                for {
+                  stage <- newlyRunnable.sortBy(_.id)
+                  jobId <- activeJobForStage(stage)
+                } {
                   logInfo("Submitting " + stage + " (" + stage.rdd + "), which is now runnable")
-                  submitMissingTasks(stage)
+                  submitMissingTasks(stage, jobId)
                 }
               }
             }
@@ -757,6 +895,7 @@ class DAGScheduler(
       val error = new SparkException("Job failed: " + reason)
       job.listener.jobFailed(error)
       listenerBus.post(SparkListenerJobEnd(job, JobFailed(error, Some(failedStage))))
+      jobIdToStageIdsRemove(job.jobId)
       idToActiveJob -= resultStage.jobId
       activeJobs -= job
       resultStageToJob -= resultStage
@@ -822,8 +961,9 @@ class DAGScheduler(
       case n: NarrowDependency[_] =>
         for (inPart <- n.getParents(partition)) {
           val locs = getPreferredLocs(n.rdd, inPart)
-          if (locs != Nil)
+          if (locs != Nil) {
             return locs
+          }
         }
       case _ =>
     })
@@ -831,21 +971,18 @@ class DAGScheduler(
   }
 
   private def cleanup(cleanupTime: Long) {
-    var sizeBefore = stageIdToStage.size
-    stageIdToStage.clearOldValues(cleanupTime)
-    logInfo("stageIdToStage " + sizeBefore + " --> " + stageIdToStage.size)
-
-    sizeBefore = shuffleToMapStage.size
-    shuffleToMapStage.clearOldValues(cleanupTime)
-    logInfo("shuffleToMapStage " + sizeBefore + " --> " + shuffleToMapStage.size)
-
-    sizeBefore = pendingTasks.size
-    pendingTasks.clearOldValues(cleanupTime)
-    logInfo("pendingTasks " + sizeBefore + " --> " + pendingTasks.size)
-
-    sizeBefore = stageToInfos.size
-    stageToInfos.clearOldValues(cleanupTime)
-    logInfo("stageToInfos " + sizeBefore + " --> " + stageToInfos.size)
+    Map(
+      "stageIdToStage" -> stageIdToStage,
+      "shuffleToMapStage" -> shuffleToMapStage,
+      "pendingTasks" -> pendingTasks,
+      "stageToInfos" -> stageToInfos,
+      "jobIdToStageIds" -> jobIdToStageIds,
+      "stageIdToJobIds" -> stageIdToJobIds).
+    foreach { case(s, t) => {
+      val sizeBefore = t.size
+      t.clearOldValues(cleanupTime)
+      logInfo("%s %d --> %d".format(s, sizeBefore, t.size))
+    }}
   }
 
   def removeStages(job: ActiveJob) = {

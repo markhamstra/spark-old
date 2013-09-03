@@ -55,6 +55,8 @@ private[spark] case class CompletionEvent(
     taskMetrics: TaskMetrics)
   extends DAGSchedulerEvent
 
+private[spark] case class LocalJobCompleted(stage: Stage) extends DAGSchedulerEvent
+
 private[spark] case class ExecutorGained(execId: String, host: String) extends DAGSchedulerEvent
 
 private[spark] case class ExecutorLost(execId: String) extends DAGSchedulerEvent

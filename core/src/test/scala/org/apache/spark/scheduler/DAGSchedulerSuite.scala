@@ -212,6 +212,7 @@ class DAGSchedulerSuite extends FunSuite with BeforeAndAfter with LocalSparkCont
     submit(rdd, Array(0))
     complete(taskSets(0), List((Success, 42)))
     assert(results === Map(0 -> 42))
+    assertDataStructuresEmpty
   }
 
   test("local job") {
@@ -223,7 +224,10 @@ class DAGSchedulerSuite extends FunSuite with BeforeAndAfter with LocalSparkCont
       override def toString = "DAGSchedulerSuite Local RDD"
     }
     runEvent(JobSubmitted(rdd, jobComputeFunc, Array(0), true, null, listener))
+    assert(scheduler.stageToInfos.size === 1)
+    runEvent(LocalJobCompleted(scheduler.stageToInfos.keys.head))
     assert(results === Map(0 -> 42))
+    assertDataStructuresEmpty
   }
 
   test("run trivial job w/ dependency") {
@@ -232,6 +236,7 @@ class DAGSchedulerSuite extends FunSuite with BeforeAndAfter with LocalSparkCont
     submit(finalRdd, Array(0))
     complete(taskSets(0), Seq((Success, 42)))
     assert(results === Map(0 -> 42))
+    assertDataStructuresEmpty
   }
 
   test("cache location preferences w/ dependency") {
@@ -244,12 +249,14 @@ class DAGSchedulerSuite extends FunSuite with BeforeAndAfter with LocalSparkCont
     assertLocations(taskSet, Seq(Seq("hostA", "hostB")))
     complete(taskSet, Seq((Success, 42)))
     assert(results === Map(0 -> 42))
+    assertDataStructuresEmpty
   }
 
   test("trivial job failure") {
     submit(makeRdd(1, Nil), Array(0))
     failed(taskSets(0), "some failure")
     assert(failure.getMessage === "Job failed: some failure")
+    assertDataStructuresEmpty
   }
 
   test("run trivial shuffle") {
@@ -265,6 +272,7 @@ class DAGSchedulerSuite extends FunSuite with BeforeAndAfter with LocalSparkCont
            Array(makeBlockManagerId("hostA"), makeBlockManagerId("hostB")))
     complete(taskSets(1), Seq((Success, 42)))
     assert(results === Map(0 -> 42))
+    assertDataStructuresEmpty
   }
 
   test("run trivial shuffle with fetch failure") {
@@ -290,6 +298,7 @@ class DAGSchedulerSuite extends FunSuite with BeforeAndAfter with LocalSparkCont
     assert(mapOutputTracker.getServerStatuses(shuffleId, 0).map(_._1.host) === Array("hostA", "hostB"))
     complete(taskSets(3), Seq((Success, 43)))
     assert(results === Map(0 -> 42, 1 -> 43))
+    assertDataStructuresEmpty
   }
 
   test("ignore late map task completions") {
@@ -318,6 +327,7 @@ class DAGSchedulerSuite extends FunSuite with BeforeAndAfter with LocalSparkCont
            Array(makeBlockManagerId("hostB"), makeBlockManagerId("hostA")))
     complete(taskSets(1), Seq((Success, 42), (Success, 43)))
     assert(results === Map(0 -> 42, 1 -> 43))
+    assertDataStructuresEmpty
   }
 
   test("run trivial shuffle with out-of-band failure and retry") {
@@ -340,6 +350,7 @@ class DAGSchedulerSuite extends FunSuite with BeforeAndAfter with LocalSparkCont
           Array(makeBlockManagerId("hostC"), makeBlockManagerId("hostB")))
    complete(taskSets(2), Seq((Success, 42)))
    assert(results === Map(0 -> 42))
+   assertDataStructuresEmpty
  }
 
  test("recursive shuffle failures") {
@@ -368,6 +379,7 @@ class DAGSchedulerSuite extends FunSuite with BeforeAndAfter with LocalSparkCont
     complete(taskSets(4), Seq((Success, makeMapStatus("hostA", 1))))
     complete(taskSets(5), Seq((Success, 42)))
     assert(results === Map(0 -> 42))
+    assertDataStructuresEmpty
   }
 
   test("cached post-shuffle") {
@@ -399,43 +411,8 @@ class DAGSchedulerSuite extends FunSuite with BeforeAndAfter with LocalSparkCont
     complete(taskSets(3), Seq((Success, makeMapStatus("hostD", 1))))
     complete(taskSets(4), Seq((Success, 42)))
     assert(results === Map(0 -> 42))
+    assertDataStructuresEmpty
   }
-
-  // test("oneGoodJob") {
-  //   val dagScheduler = new DAGScheduler(new TaskSchedulerMock(count => Success))
-  //   try {
-  //     val rdd = new ParallelCollectionRDD(sc, 1.to(100).toSeq, 5, Map.empty)
-  //     val func = (tc: TaskContext, iter: Iterator[Int]) => 1
-  //     val callSite = Utils.getSparkCallSite
-
-  //     dagScheduler.runJob(rdd, func, 0 until rdd.partitions.size, callSite, false, {(_: Int, _: Int) => {}})
-  //     assertDagSchedulerEmpty(dagScheduler)
-  //   } finally {
-  //     dagScheduler.stop()
-  //     sc.stop()
-  //     // pause to let dagScheduler stop (separate thread)
-  //     Thread.sleep(10)
-  //   }
-  // }
-
-  // test("manyGoodJobs") {
-  //   val dagScheduler = new DAGScheduler(new TaskSchedulerMock(count => Success))
-  //   try {
-  //     val rdd = new ParallelCollectionRDD(sc, 1.to(100).toSeq, 5, Map.empty)
-  //     val func = (tc: TaskContext, iter: Iterator[Int]) => 1
-  //     val callSite = Utils.getSparkCallSite
-
-  //     1.to(100).foreach( v => {
-  //       dagScheduler.runJob(rdd, func, 0 until rdd.partitions.size, callSite, false, {(_: Int, _: Int) => {}})
-  //     })
-  //     assertDagSchedulerEmpty(dagScheduler)
-  //   } finally {
-  //     dagScheduler.stop()
-  //     sc.stop()
-  //     // pause to let dagScheduler stop (separate thread)
-  //     Thread.sleep(10)
-  //   }
-  // }
 
   /**
    * Assert that the supplied TaskSet has exactly the given hosts as its preferred locations.
@@ -454,49 +431,18 @@ class DAGSchedulerSuite extends FunSuite with BeforeAndAfter with LocalSparkCont
   private def makeBlockManagerId(host: String): BlockManagerId =
     BlockManagerId("exec-" + host, host, 12345, 0)
 
-  private def assertDagSchedulerEmpty(dagScheduler: DAGScheduler) = {
-    assert(dagScheduler.pendingTasks.isEmpty)
-    assert(dagScheduler.activeJobs.isEmpty)
-    assert(dagScheduler.failed.isEmpty)
-    assert(dagScheduler.jobIdToStageIds.isEmpty)
-    assert(dagScheduler.stageIdToStage.isEmpty)
-    assert(dagScheduler.resultStageToJob.isEmpty)
-    assert(dagScheduler.running.isEmpty)
-    assert(dagScheduler.shuffleToMapStage.isEmpty)
-    assert(dagScheduler.waiting.isEmpty)
+  private def assertDataStructuresEmpty = {
+    assert(scheduler.pendingTasks.isEmpty)
+    assert(scheduler.activeJobs.isEmpty)
+    assert(scheduler.failed.isEmpty)
+    assert(scheduler.idToActiveJob.isEmpty)
+    assert(scheduler.jobIdToStageIds.isEmpty)
+    assert(scheduler.stageIdToJobIds.isEmpty)
+    assert(scheduler.stageIdToStage.isEmpty)
+    assert(scheduler.stageToInfos.isEmpty)
+    assert(scheduler.resultStageToJob.isEmpty)
+    assert(scheduler.running.isEmpty)
+    assert(scheduler.shuffleToMapStage.isEmpty)
+    assert(scheduler.waiting.isEmpty)
   }
-}
-
-class TaskSchedulerMock(f: (Int) => TaskEndReason ) extends TaskScheduler {
-  // Listener object to pass upcalls into
-  var listener: TaskSchedulerListener = null
-  var taskCount = 0
-
-  override def start(): Unit = {}
-
-  // Disconnect from the cluster.
-  override def stop(): Unit = {}
-
-  // Submit a sequence of tasks to run.
-  override def submitTasks(taskSet: TaskSet): Unit = {
-    taskSet.tasks.foreach( task => {
-      val m = new scala.collection.mutable.HashMap[Long, Any]()
-      m.put(task.stageId, 1)
-      taskCount += 1
-      listener.taskEnded(task, f(taskCount), 1, m, null, task.metrics.getOrElse(null))  // TODO: TaskInfo
-    })
-  }
-
-  // Set a listener for upcalls. This is guaranteed to be set before submitTasks is called.
-  override def setListener(listener: TaskSchedulerListener) {
-    this.listener = listener
-  }
-
-  // Get the default level of parallelism to use in the cluster, as a hint for sizing jobs.
-  override def defaultParallelism(): Int = {
-    2
-  }
-
-  override def rootPool: Pool = null
-  override def schedulingMode: SchedulingMode = SchedulingMode.NONE
 }
