@@ -107,8 +107,6 @@ class DAGScheduler(
 
   val nextJobId = new AtomicInteger(0)
 
-  val jobIdToStageIds = new HashMap[Int, HashSet[Int]]
-
   val nextStageId = new AtomicInteger(0)
 
   val jobIdToStageIds = new TimeStampedHashMap[Int, HashSet[Int]]
@@ -209,8 +207,6 @@ class DAGScheduler(
     stageIdToStage(id) = stage
     registerJobIdWithStages(jobId, stage)
     stageToInfos(stage) = StageInfo(stage)
-    val stageIdSet = jobIdToStageIds.getOrElseUpdate(jobId, new HashSet)
-    stageIdSet += id
     stage
   }
 
@@ -744,7 +740,7 @@ class DAGScheduler(
                     resultStageToJob -= stage
                     markStageAsFinished(stage)
                     listenerBus.post(SparkListenerJobEnd(job, JobSucceeded))
-                    removeStages(job)
+                    jobIdToStageIdsRemove(job.jobId)
                   }
                   job.listener.taskSucceeded(rt.outputId, event.result)
                 }
@@ -899,7 +895,6 @@ class DAGScheduler(
       idToActiveJob -= resultStage.jobId
       activeJobs -= job
       resultStageToJob -= resultStage
-      removeStages(job)
     }
     if (dependentStages.isEmpty) {
       logInfo("Ignoring failure of " + failedStage + " because all jobs depending on it are done")
@@ -983,19 +978,6 @@ class DAGScheduler(
       t.clearOldValues(cleanupTime)
       logInfo("%s %d --> %d".format(s, sizeBefore, t.size))
     }}
-  }
-
-  def removeStages(job: ActiveJob) = {
-    jobIdToStageIds(job.jobId).foreach(stageId => {
-      stageIdToStage.get(stageId).map( stage => {
-        pendingTasks -= stage
-        waiting -= stage
-        running -= stage
-        failed -= stage
-      })
-      stageIdToStage -= stageId
-    })
-    jobIdToStageIds -= job.jobId
   }
 
   def stop() {
