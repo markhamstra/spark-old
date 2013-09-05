@@ -612,6 +612,10 @@ class DAGScheduler(
   }
 
   /** Finds the earliest-created active job that needs the stage */
+  // TODO: Probably should actually find among the active jobs that need this
+  // stage the one with the highest priority (highest-priority pool, earliest created).
+  // That should take care of at least part of the priority inversion problem with
+  // cross-job dependencies.
   private def activeJobForStage(stage: Stage): Option[Int] = {
     if (stageIdToJobIds.contains(stage.id)) {
       val jobsThatUseStage: Array[Int] = stageIdToJobIds(stage.id).toArray.sorted
