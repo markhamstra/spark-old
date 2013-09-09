@@ -596,7 +596,8 @@ class DAGScheduler(
       SparkEnv.set(env)
       val rdd = job.finalStage.rdd
       val split = rdd.partitions(job.partitions(0))
-      val taskContext = new TaskContext(job.finalStage.id, job.partitions(0), 0)
+      val taskContext =
+        new TaskContext(job.finalStage.id, job.partitions(0), 0, runningLocally = true)
       try {
         val result = job.func(taskContext, rdd.iterator(split, taskContext))
         job.listener.taskSucceeded(0, result)
@@ -666,6 +667,7 @@ class DAGScheduler(
         tasks += new ResultTask(stage.id, stage.rdd, job.func, partition, locs, id)
       }
     }
+
     // must be run listener before possible NotSerializableException
     // should be "StageSubmitted" first and then "JobEnded"
     val properties = idToActiveJob(jobId).properties

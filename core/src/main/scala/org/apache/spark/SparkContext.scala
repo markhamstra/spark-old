@@ -196,7 +196,7 @@ class SparkContext(
 
       case "yarn-standalone" =>
         val scheduler = try {
-          val clazz = Class.forName("spark.scheduler.cluster.YarnClusterScheduler")
+          val clazz = Class.forName("org.apache.spark.scheduler.cluster.YarnClusterScheduler")
           val cons = clazz.getConstructor(classOf[SparkContext])
           cons.newInstance(this).asInstanceOf[ClusterScheduler]
         } catch {
@@ -260,7 +260,7 @@ class SparkContext(
   private val localProperties = new DynamicVariable[Properties](null)
 
   def initLocalProperties() {
-      localProperties.value = new Properties()
+    localProperties.value = new Properties()
   }
 
   def setLocalProperty(key: String, value: String) {
@@ -282,8 +282,8 @@ class SparkContext(
   // Post init
   taskScheduler.postStartHook()
 
-  val dagSchedulerSource = new DAGSchedulerSource(this.dagScheduler)
-  val blockManagerSource = new BlockManagerSource(SparkEnv.get.blockManager)
+  val dagSchedulerSource = new DAGSchedulerSource(this.dagScheduler, this)
+  val blockManagerSource = new BlockManagerSource(SparkEnv.get.blockManager, this)
 
   def initDriverMetrics() {
     SparkEnv.get.metricsSystem.registerSource(dagSchedulerSource)
@@ -723,7 +723,8 @@ class SparkContext(
     val callSite = Utils.formatSparkCallSite
     logInfo("Starting job: " + callSite)
     val start = System.nanoTime
-    val result = dagScheduler.runJob(rdd, func, partitions, callSite, allowLocal, resultHandler, localProperties.value)
+    val result = dagScheduler.runJob(rdd, func, partitions, callSite, allowLocal, resultHandler,
+      localProperties.value)
     logInfo("Job finished: " + callSite + ", took " + (System.nanoTime - start) / 1e9 + " s")
     rdd.doCheckpoint()
     result
