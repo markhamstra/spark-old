@@ -25,7 +25,7 @@
   </parent>
   <groupId>org.apache.spark</groupId>
   <artifactId>spark-parent</artifactId>
-  <version>0.8.0RC1-csd-1-SNAPSHOT</version>
+  <version>0.8.0RC4-csd-1-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Spark Project Parent POM</name>
   <url>http://spark.incubator.apache.org/</url>
@@ -38,7 +38,9 @@
   </licenses>
   <scm>
     <connection>scm:git:git@github.com:clearstorydata/spark.git</connection>
+    <developerConnection>scm:git:git@github.com:clearstorydata/spark.git
     <url>scm:git:git@github.com:clearstorydata/spark.git</url>
+    <tag>HEAD</tag>
   </scm>
   <developers>
     <developer>
@@ -625,7 +627,7 @@
             <junitxml>.</junitxml>
             <filereports>${project.build.directory}/SparkTestSuite.txt</filereports>
             <argLine>-Xms64m -Xmx3g</argLine>
-            <stderr/>
+            <stderr />
           </configuration>
           <executions>
             <execution>
