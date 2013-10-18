@@ -15,27 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.spark.rdd
+package org.apache.spark.api.java.function
 
-import org.apache.spark.{Partition, TaskContext}
-
+import scala.runtime.AbstractFunction4
 
 /**
- * A variant of the MapPartitionsRDD that passes the partition index into the
- * closure. This can be used to generate or collect partition specific
- * information such as the number of tuples in a partition.
+ * Subclass of Function4 for ease of calling from Java. The main thing it does is re-expose the
+ * apply() method as call() and declare that it can throw Exception (since AbstractFunction3.apply
+ * isn't marked to allow that).
  */
-private[spark]
-class MapPartitionsWithIndexRDD[U: ClassManifest, T: ClassManifest](
-    prev: RDD[T],
-    f: (Int, Iterator[T]) => Iterator[U],
-    preservesPartitioning: Boolean
-  ) extends RDD[U](prev) {
+private[spark] abstract class WrappedFunction4[T1, T2, T3, T4, R] extends AbstractFunction4[T1, T2, T3, T4, R] {
+  @throws(classOf[Exception])
+  def call(t1: T1, t2: T2, t3: T3, t4: T4): R
 
-  override def getPartitions: Array[Partition] = firstParent[T].partitions
-
-  override val partitioner = if (preservesPartitioning) prev.partitioner else None
-
-  override def compute(split: Partition, context: TaskContext) =
-    f(split.index, firstParent[T].iterator(split, context))
+  final def apply(t1: T1, t2: T2, t3: T3, t4: T4): R = call(t1, t2, t3, t4)
 }
