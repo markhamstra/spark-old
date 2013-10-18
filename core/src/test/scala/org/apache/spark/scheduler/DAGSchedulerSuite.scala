@@ -397,7 +397,7 @@ class DAGSchedulerSuite extends FunSuite with BeforeAndAfter with LocalSparkCont
   }
 
   // test("oneGoodJob") {
-  //   val dagScheduler = new DAGScheduler(new TaskSchedulerMock(count => Success))
+  //   val dagScheduler = new DAGScheduler(new TaskScheduler(count => Success))
   //   try {
   //     val rdd = new ParallelCollectionRDD(sc, 1.to(100).toSeq, 5, Map.empty)
   //     val func = (tc: TaskContext, iter: Iterator[Int]) => 1
@@ -414,7 +414,7 @@ class DAGSchedulerSuite extends FunSuite with BeforeAndAfter with LocalSparkCont
   // }
 
   // test("manyGoodJobs") {
-  //   val dagScheduler = new DAGScheduler(new TaskSchedulerMock(count => Success))
+  //   val dagScheduler = new DAGScheduler(new TaskScheduler(count => Success))
   //   try {
   //     val rdd = new ParallelCollectionRDD(sc, 1.to(100).toSeq, 5, Map.empty)
   //     val func = (tc: TaskContext, iter: Iterator[Int]) => 1
@@ -460,38 +460,4 @@ class DAGSchedulerSuite extends FunSuite with BeforeAndAfter with LocalSparkCont
     assert(dagScheduler.shuffleToMapStage.isEmpty)
     assert(dagScheduler.waiting.isEmpty)
   }
-}
-
-class TaskSchedulerMock(f: (Int) => TaskEndReason ) extends TaskScheduler {
-  // Listener object to pass upcalls into
-  var listener: TaskSchedulerListener = null
-  var taskCount = 0
-
-  override def start(): Unit = {}
-
-  // Disconnect from the cluster.
-  override def stop(): Unit = {}
-
-  // Submit a sequence of tasks to run.
-  override def submitTasks(taskSet: TaskSet): Unit = {
-    taskSet.tasks.foreach( task => {
-      val m = new scala.collection.mutable.HashMap[Long, Any]()
-      m.put(task.stageId, 1)
-      taskCount += 1
-      listener.taskEnded(task, f(taskCount), 1, m, null, task.metrics.getOrElse(null))  // TODO: TaskInfo
-    })
-  }
-
-  // Set a listener for upcalls. This is guaranteed to be set before submitTasks is called.
-  override def setListener(listener: TaskSchedulerListener) {
-    this.listener = listener
-  }
-
-  // Get the default level of parallelism to use in the cluster, as a hint for sizing jobs.
-  override def defaultParallelism(): Int = {
-    2
-  }
-
-  override def rootPool: Pool = null
-  override def schedulingMode: SchedulingMode = SchedulingMode.NONE
 }

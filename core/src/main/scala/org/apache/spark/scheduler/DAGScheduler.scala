@@ -107,15 +107,15 @@ class DAGScheduler(
 
   private[scheduler] val nextJobId = new AtomicInteger(0)
 
-  val jobIdToStageIds = new HashMap[Int, HashSet[Int]]
+  private[scheduler] val jobIdToStageIds = new HashMap[Int, HashSet[Int]]
 
   def numTotalJobs: Int = nextJobId.get()
 
   private val nextStageId = new AtomicInteger(0)
 
-  private val stageIdToStage = new TimeStampedHashMap[Int, Stage]
+  private[scheduler] val stageIdToStage = new TimeStampedHashMap[Int, Stage]
 
-  private val shuffleToMapStage = new TimeStampedHashMap[Int, Stage]
+  private[scheduler] val shuffleToMapStage = new TimeStampedHashMap[Int, Stage]
 
   private[spark] val stageToInfos = new TimeStampedHashMap[Stage, StageInfo]
 
